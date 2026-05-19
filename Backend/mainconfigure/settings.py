@@ -129,7 +129,7 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
-    "https://menswear-nine.vercel.app/",
+    "https://menswear-nine.vercel.app",
 ]
 
 
@@ -137,7 +137,7 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://*.onrender.com",
     "https://*.vercel.app",
-    "https://your-vercel-url.vercel.app",
+    "https://menswear-nine.vercel.app",
     
 ]
 
