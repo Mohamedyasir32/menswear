@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
 
@@ -18,22 +18,43 @@ function Checkout() {
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem("cart")) || [];
-    setCart(savedCart);
+    setCart(Array.isArray(savedCart) ? savedCart : []);
   }, []);
 
-  const totalPrice = cart.reduce(
-    (total, item) => total + Number(item.price) * Number(item.quantity),
-    0
-  );
+  const totalPrice = useMemo(() => {
+    return cart.reduce(
+      (total, item) =>
+        total + Number(item.price || 0) * Number(item.quantity || 1),
+      0
+    );
+  }, [cart]);
 
-  const discountAmount = (totalPrice * Number(discount)) / 100;
-  const finalTotal = totalPrice - discountAmount;
+  const discountAmount = (totalPrice * Number(discount || 0)) / 100;
+  const finalTotal = Math.max(totalPrice - discountAmount, 0);
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
+  };
+
+  const getErrorMessage = (error) => {
+    const data = error.response?.data;
+
+    if (!data) return "Checkout failed. Please login or check backend.";
+
+    if (typeof data === "string") return data;
+
+    if (Array.isArray(data)) return data[0];
+
+    if (typeof data === "object") {
+      const firstKey = Object.keys(data)[0];
+      const value = data[firstKey];
+      return Array.isArray(value) ? `${firstKey}: ${value[0]}` : `${firstKey}: ${value}`;
+    }
+
+    return "Checkout failed. Please try again.";
   };
 
   const validateCheckout = () => {
@@ -42,8 +63,18 @@ function Checkout() {
       return false;
     }
 
-    if (!form.phone.trim() || !form.address.trim()) {
-      alert("Please fill delivery details");
+    if (!form.phone.trim()) {
+      alert("Please enter phone number");
+      return false;
+    }
+
+    if (form.phone.trim().length < 8) {
+      alert("Please enter a valid phone number");
+      return false;
+    }
+
+    if (!form.address.trim()) {
+      alert("Please enter delivery address");
       return false;
     }
 
@@ -54,18 +85,14 @@ function Checkout() {
     for (const item of cart) {
       const orderResponse = await API.post("orders/create/", {
         product: item.id,
-        quantity: item.quantity,
-        phone: form.phone,
-        address: form.address,
-        coupon_code: coupon || null,
-        discount_percent: discount,
-        final_total: finalTotal,
+        quantity: Number(item.quantity || 1),
+        phone: form.phone.trim(),
+        address: form.address.trim(),
       });
 
       await API.post("payments/create/", {
         order: orderResponse.data.id,
         payment_method: paymentMethod,
-        amount: Number(item.price) * Number(item.quantity),
       });
     }
   };
@@ -78,7 +105,7 @@ function Checkout() {
 
     try {
       const response = await API.post("coupon/apply/", {
-        code: coupon.trim(),
+        code: coupon.trim().toUpperCase(),
       });
 
       setDiscount(Number(response.data.discount_percent || 0));
@@ -93,7 +120,7 @@ function Checkout() {
   const placeOrder = async (e) => {
     e.preventDefault();
 
-    if (!validateCheckout()) return;
+    if (!validateCheckout() || loading) return;
 
     setLoading(true);
 
@@ -105,14 +132,14 @@ function Checkout() {
       navigate("/orders");
     } catch (error) {
       console.log(error.response?.data || error);
-      alert("Checkout failed. Please login or check stock.");
+      alert(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
   };
 
   const payWithRazorpay = () => {
-    if (!validateCheckout()) return;
+    if (!validateCheckout() || loading) return;
 
     if (typeof window.Razorpay === "undefined") {
       alert("Razorpay SDK failed to load. Add Razorpay script in public/index.html");
@@ -135,10 +162,7 @@ function Checkout() {
 
           localStorage.removeItem("cart");
 
-          alert(
-            "Payment Successful\nPayment ID: " + response.razorpay_payment_id
-          );
-
+          alert("Payment Successful\nPayment ID: " + response.razorpay_payment_id);
           navigate("/orders");
         } catch (error) {
           console.log(error.response?.data || error);
@@ -173,58 +197,64 @@ function Checkout() {
   };
 
   return (
-    <div className="container mt-5 mb-5">
-      <div className="row justify-content-center">
-        <div className="col-md-10">
-          <div className="card shadow border-0 p-4">
-            <h2 className="mb-4 text-center">Checkout</h2>
+    <div className="min-vh-100 py-4 py-md-5" style={{ background: "#f5f7fa" }}>
+      <div className="container">
+        <div className="card shadow border-0 p-3 p-md-5">
+          <h2 className="mb-4 text-center fw-bold">Checkout</h2>
 
-            {cart.length === 0 ? (
-              <div className="text-center">
-                <h5>Your cart is empty</h5>
-              </div>
-            ) : (
-              <div className="row">
-                <div className="col-md-7">
-                  <form onSubmit={placeOrder}>
-                    <input
-                      type="text"
-                      name="phone"
-                      className="form-control mb-3"
-                      placeholder="Phone Number"
-                      value={form.phone}
-                      onChange={handleChange}
-                      required
-                    />
+          {cart.length === 0 ? (
+            <div className="text-center py-5">
+              <h5>Your cart is empty</h5>
+              <button
+                className="btn btn-dark mt-3"
+                onClick={() => navigate("/products")}
+              >
+                Continue Shopping
+              </button>
+            </div>
+          ) : (
+            <div className="row g-4">
+              <div className="col-lg-7">
+                <form onSubmit={placeOrder}>
+                  <input
+                    type="text"
+                    name="phone"
+                    className="form-control form-control-lg mb-3"
+                    placeholder="Phone Number"
+                    value={form.phone}
+                    onChange={handleChange}
+                    required
+                  />
 
-                    <textarea
-                      name="address"
-                      className="form-control mb-3"
-                      placeholder="Delivery Address"
-                      rows="4"
-                      value={form.address}
-                      onChange={handleChange}
-                      required
-                    />
+                  <textarea
+                    name="address"
+                    className="form-control mb-3"
+                    placeholder="Delivery Address"
+                    rows="4"
+                    value={form.address}
+                    onChange={handleChange}
+                    required
+                  />
 
-                    <select
-                      name="payment_method"
-                      className="form-select mb-3"
-                      value={form.payment_method}
-                      onChange={handleChange}
-                    >
-                      <option value="Cash on Delivery">Cash on Delivery</option>
-                      <option value="UPI">UPI</option>
-                      <option value="Card">Card</option>
-                      <option value="Razorpay">Razorpay</option>
-                    </select>
+                  <select
+                    name="payment_method"
+                    className="form-select form-select-lg mb-3"
+                    value={form.payment_method}
+                    onChange={handleChange}
+                  >
+                    <option value="Cash on Delivery">Cash on Delivery</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Card">Card</option>
+                    <option value="Razorpay">Razorpay</option>
+                  </select>
 
-                    <div className="card p-3 mb-3 bg-light">
-                      <h5>Apply Coupon</h5>
+                  <div className="card p-3 mb-3 bg-light border-0">
+                    <h5 className="fw-bold">Apply Coupon</h5>
 
+                    <div className="d-flex flex-column flex-md-row gap-2">
                       <input
                         type="text"
-                        className="form-control mb-2"
+                        className="form-control"
                         placeholder="Enter Coupon Code"
                         value={coupon}
                         onChange={(e) => setCoupon(e.target.value)}
@@ -235,73 +265,79 @@ function Checkout() {
                         className="btn btn-warning"
                         onClick={applyCoupon}
                       >
-                        Apply Coupon
+                        Apply
                       </button>
+                    </div>
 
-                      <div className="mt-3">
-                        <p className="mb-1">Discount: {discount}%</p>
-                        <h5>Final Total: ₹ {finalTotal.toFixed(2)}</h5>
+                    <div className="mt-3">
+                      <p className="mb-1">Discount: {discount}%</p>
+                      <h5>Final Total: ₹ {finalTotal.toFixed(2)}</h5>
+                    </div>
+                  </div>
+
+                  {form.payment_method === "Razorpay" ? (
+                    <button
+                      type="button"
+                      className="btn btn-primary w-100 py-3"
+                      onClick={payWithRazorpay}
+                      disabled={loading}
+                    >
+                      {loading ? "Processing..." : "Pay with Razorpay"}
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      className="btn btn-success w-100 py-3"
+                      disabled={loading}
+                    >
+                      {loading ? "Placing Order..." : "Place Order"}
+                    </button>
+                  )}
+                </form>
+              </div>
+
+              <div className="col-lg-5">
+                <div className="card p-3 p-md-4 shadow-sm border-0">
+                  <h4 className="mb-3 fw-bold">Order Summary</h4>
+
+                  {cart.map((item) => (
+                    <div key={item.id} className="border-bottom py-2">
+                      <div className="d-flex justify-content-between gap-3">
+                        <div>
+                          <p className="mb-0 fw-semibold">{item.name}</p>
+                          <small className="text-muted">Qty: {item.quantity}</small>
+                        </div>
+
+                        <p className="mb-0 fw-bold">
+                          ₹{" "}
+                          {(
+                            Number(item.price || 0) * Number(item.quantity || 1)
+                          ).toFixed(2)}
+                        </p>
                       </div>
                     </div>
+                  ))}
 
-                    {form.payment_method === "Razorpay" ? (
-                      <button
-                        type="button"
-                        className="btn btn-primary me-2"
-                        onClick={payWithRazorpay}
-                        disabled={loading}
-                      >
-                        {loading ? "Processing..." : "Pay with Razorpay"}
-                      </button>
-                    ) : (
-                      <button className="btn btn-success" disabled={loading}>
-                        {loading ? "Placing Order..." : "Place Order"}
-                      </button>
-                    )}
-                  </form>
-                </div>
+                  <div className="d-flex justify-content-between mt-3">
+                    <p>Total</p>
+                    <p>₹ {totalPrice.toFixed(2)}</p>
+                  </div>
 
-                <div className="col-md-5 mt-4 mt-md-0">
-                  <div className="card p-4 shadow-sm">
-                    <h4 className="mb-3">Order Summary</h4>
+                  <div className="d-flex justify-content-between">
+                    <p>Discount</p>
+                    <p>₹ {discountAmount.toFixed(2)}</p>
+                  </div>
 
-                    {cart.map((item) => (
-                      <div
-                        key={item.id}
-                        className="d-flex justify-content-between mb-2"
-                      >
-                        <p className="mb-0">
-                          {item.name} x {item.quantity}
-                        </p>
-                        <p className="mb-0">
-                          ₹ {(Number(item.price) * Number(item.quantity)).toFixed(2)}
-                        </p>
-                      </div>
-                    ))}
+                  <hr />
 
-                    <hr />
-
-                    <div className="d-flex justify-content-between">
-                      <p>Total</p>
-                      <p>₹ {totalPrice.toFixed(2)}</p>
-                    </div>
-
-                    <div className="d-flex justify-content-between">
-                      <p>Discount</p>
-                      <p>₹ {discountAmount.toFixed(2)}</p>
-                    </div>
-
-                    <hr />
-
-                    <div className="d-flex justify-content-between">
-                      <h5>Final Total</h5>
-                      <h5>₹ {finalTotal.toFixed(2)}</h5>
-                    </div>
+                  <div className="d-flex justify-content-between">
+                    <h5>Final Total</h5>
+                    <h5 className="text-success">₹ {finalTotal.toFixed(2)}</h5>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,216 +1,78 @@
-import {
-  Navigate,
-  useLocation,
-} from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
-import {
-  useEffect,
-  useState,
-} from "react";
+function ProtectedRoute({ children, adminOnly = false }) {
+  const location = useLocation();
+  const navigate = useNavigate();
 
-function ProtectedRoute({
-  children,
-  adminOnly = false,
-}) {
-  const location =
-    useLocation();
+  const token = localStorage.getItem("access");
+  const isStaff = localStorage.getItem("is_staff") === "true";
 
-  const [loading,
-    setLoading] =
-    useState(true);
-
-  const [authorized,
-    setAuthorized] =
-    useState(false);
-
-  useEffect(() => {
-    const checkAuth =
-      async () => {
-        try {
-          const token =
-            localStorage.getItem(
-              "access"
-            );
-
-          const isStaff =
-            localStorage.getItem(
-              "is_staff"
-            ) ===
-            "true";
-
-          // No token
-
-          if (!token) {
-            setAuthorized(
-              false
-            );
-
-            setLoading(
-              false
-            );
-
-            return;
-          }
-
-          // Admin Route Check
-
-          if (
-            adminOnly &&
-            !isStaff
-          ) {
-            setAuthorized(
-              false
-            );
-
-            setLoading(
-              false
-            );
-
-            return;
-          }
-
-          // Success
-
-          setAuthorized(
-            true
-          );
-
-          setLoading(
-            false
-          );
-        } catch (error) {
-          console.log(
-            error
-          );
-
-          setAuthorized(
-            false
-          );
-
-          setLoading(
-            false
-          );
-        }
-      };
-
-    checkAuth();
-  }, [adminOnly]);
-
-  // Loading Screen
-
-  if (loading) {
+  if (!token) {
     return (
-      <div
-        className="d-flex justify-content-center align-items-center"
-        style={{
-          height:
-            "100vh",
-          background:
-            "#f5f7fa",
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          from: location,
         }}
-      >
-        <div className="text-center">
-          <div
-            className="spinner-border text-dark mb-3"
-            role="status"
-            style={{
-              width:
-                "4rem",
-              height:
-                "4rem",
-            }}
-          >
-            <span className="visually-hidden">
-              Loading...
-            </span>
-          </div>
-
-          <h5 className="fw-bold">
-            Checking Authentication...
-          </h5>
-
-          <p className="text-muted">
-            Please wait
-          </p>
-        </div>
-      </div>
+      />
     );
   }
 
-  // Not Authorized
-
-  if (!authorized) {
-    const token =
-      localStorage.getItem(
-        "access"
-      );
-
-    // Not Logged In
-
-    if (!token) {
-      return (
-        <Navigate
-          to="/login"
-          replace
-          state={{
-            from:
-              location,
-          }}
-        />
-      );
-    }
-
-    // Normal user trying admin route
-
+  if (adminOnly && !isStaff) {
     return (
       <div
-        className="d-flex justify-content-center align-items-center"
-        style={{
-          height:
-            "100vh",
-          background:
-            "#f5f7fa",
-        }}
+        className="min-vh-100 d-flex justify-content-center align-items-center px-3"
+        style={{ background: "#f5f7fa" }}
       >
-        <div className="card border-0 shadow-lg p-5 text-center">
+        <div
+          className="card border-0 shadow-lg text-center p-4 p-md-5"
+          style={{ maxWidth: "520px", width: "100%" }}
+        >
           <div
             className="mx-auto mb-4 rounded-circle bg-danger text-white d-flex align-items-center justify-content-center"
             style={{
-              width:
-                "90px",
-              height:
-                "90px",
-              fontSize:
-                "40px",
+              width: "90px",
+              height: "90px",
+              fontSize: "42px",
+              fontWeight: "bold",
             }}
           >
             !
           </div>
 
-          <h2 className="fw-bold mb-3">
-            Access Denied
-          </h2>
+          <h2 className="fw-bold mb-3">Access Denied</h2>
 
           <p className="text-muted mb-4">
-            You are not authorized
-            to access this page.
+            You are logged in, but you do not have admin permission to access
+            this page.
           </p>
 
-          <button
-            className="btn btn-dark px-4"
-            onClick={() =>
-              (window.location.href =
-                "/products")
-            }
-          >
-            Back to Products
-          </button>
+          <div className="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+            <button
+              className="btn btn-dark px-4"
+              onClick={() => navigate("/products")}
+            >
+              Back to Products
+            </button>
+
+            <button
+              className="btn btn-outline-danger px-4"
+              onClick={() => {
+                localStorage.removeItem("access");
+                localStorage.removeItem("refresh");
+                localStorage.removeItem("is_staff");
+                localStorage.removeItem("username");
+                navigate("/login");
+              }}
+            >
+              Login as Admin
+            </button>
+          </div>
         </div>
       </div>
     );
   }
-
-  // Authorized
 
   return children;
 }

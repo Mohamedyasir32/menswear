@@ -1,23 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 function Cart() {
   const [cart, setCart] = useState([]);
 
-  useEffect(() => {
-    const savedCart =
-      JSON.parse(localStorage.getItem("cart")) || [];
+  const safeParseCart = () => {
+    try {
+      const data = JSON.parse(localStorage.getItem("cart"));
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  };
 
-    setCart(savedCart);
+  useEffect(() => {
+    setCart(safeParseCart());
   }, []);
 
   const updateCart = (updatedCart) => {
     setCart(updatedCart);
 
-    localStorage.setItem(
-      "cart",
-      JSON.stringify(updatedCart)
-    );
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+
+    window.dispatchEvent(new Event("cartUpdated"));
   };
 
   const increaseQty = (id) => {
@@ -25,7 +30,7 @@ function Cart() {
       item.id === id
         ? {
             ...item,
-            quantity: item.quantity + 1,
+            quantity: Number(item.quantity || 1) + 1,
           }
         : item
     );
@@ -35,10 +40,13 @@ function Cart() {
 
   const decreaseQty = (id) => {
     const updatedCart = cart.map((item) =>
-      item.id === id && item.quantity > 1
+      item.id === id
         ? {
             ...item,
-            quantity: item.quantity - 1,
+            quantity:
+              Number(item.quantity || 1) > 1
+                ? Number(item.quantity) - 1
+                : 1,
           }
         : item
     );
@@ -47,9 +55,7 @@ function Cart() {
   };
 
   const removeItem = (id) => {
-    const updatedCart = cart.filter(
-      (item) => item.id !== id
-    );
+    const updatedCart = cart.filter((item) => item.id !== id);
 
     updateCart(updatedCart);
   };
@@ -57,294 +63,323 @@ function Cart() {
   const clearCart = () => {
     localStorage.removeItem("cart");
     setCart([]);
+
+    window.dispatchEvent(new Event("cartUpdated"));
   };
 
-  const totalPrice = cart.reduce(
-    (total, item) =>
-      total +
-      Number(item.price) * item.quantity,
-    0
-  );
+  const totalPrice = useMemo(() => {
+    return cart.reduce(
+      (total, item) =>
+        total +
+        Number(item.price || 0) * Number(item.quantity || 1),
+      0
+    );
+  }, [cart]);
 
-  const totalItems = cart.reduce(
-    (total, item) =>
-      total + item.quantity,
-    0
-  );
+  const totalItems = useMemo(() => {
+    return cart.reduce(
+      (total, item) => total + Number(item.quantity || 1),
+      0
+    );
+  }, [cart]);
 
   return (
-    <div className="container mt-5 mb-5">
-      {/* Header */}
+    <div
+      className="min-vh-100 py-4 py-md-5"
+      style={{ background: "#f5f7fa" }}
+    >
+      <div className="container">
+        {/* Header */}
 
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 className="fw-bold">
-            My Cart
-          </h2>
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+          <div>
+            <h2 className="fw-bold mb-1">My Cart</h2>
 
-          <p className="text-muted">
-            Manage your shopping cart
-          </p>
+            <p className="text-muted mb-0">
+              Manage your shopping cart
+            </p>
+          </div>
+
+          {cart.length > 0 && (
+            <button
+              className="btn btn-outline-danger align-self-start align-self-md-auto"
+              onClick={clearCart}
+            >
+              Clear Cart
+            </button>
+          )}
         </div>
 
-        {cart.length > 0 && (
-          <button
-            className="btn btn-outline-danger"
-            onClick={clearCart}
-          >
-            Clear Cart
-          </button>
-        )}
-      </div>
+        {/* Empty Cart */}
 
-      {/* Empty Cart */}
+        {cart.length === 0 ? (
+          <div className="card border-0 shadow-lg text-center p-4 p-md-5">
+            <div
+              className="mx-auto mb-4 d-flex align-items-center justify-content-center rounded-circle bg-light"
+              style={{
+                width: "120px",
+                height: "120px",
+                fontSize: "50px",
+              }}
+            >
+              🛒
+            </div>
 
-      {cart.length === 0 ? (
-        <div className="card shadow border-0 p-5 text-center">
-          <h3>Your Cart is Empty</h3>
+            <h3 className="fw-bold">Your Cart is Empty</h3>
 
-          <p className="text-muted">
-            Add products to continue shopping
-          </p>
+            <p className="text-muted">
+              Add products to continue shopping
+            </p>
 
-          <Link
-            to="/products"
-            className="btn btn-dark mt-3"
-          >
-            Shop Now
-          </Link>
-        </div>
-      ) : (
-        <div className="row">
-          {/* Cart Items */}
+            <Link
+              to="/products"
+              className="btn btn-dark mt-3 px-4 py-2"
+            >
+              Shop Now
+            </Link>
+          </div>
+        ) : (
+          <div className="row g-4">
+            {/* Cart Items */}
 
-          <div className="col-lg-8">
-            {/* Desktop Table */}
+            <div className="col-lg-8">
+              {/* Desktop View */}
 
-            <div className="table-responsive d-none d-md-block">
-              <table className="table table-hover align-middle shadow-sm">
-                <thead className="table-dark">
-                  <tr>
-                    <th>Product</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Subtotal</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
+              <div className="table-responsive d-none d-md-block">
+                <table className="table align-middle shadow-sm bg-white">
+                  <thead className="table-dark">
+                    <tr>
+                      <th>Product</th>
+                      <th>Price</th>
+                      <th>Quantity</th>
+                      <th>Subtotal</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
 
-                <tbody>
-                  {cart.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          {item.image && (
+                  <tbody>
+                    {cart.map((item) => (
+                      <tr key={item.id}>
+                        <td>
+                          <div className="d-flex align-items-center">
                             <img
                               src={item.image}
                               alt={item.name}
-                              width="80"
-                              height="80"
+                              width="90"
+                              height="90"
                               className="rounded me-3"
                               style={{
                                 objectFit: "cover",
                               }}
                             />
-                          )}
 
-                          <div>
-                            <h6 className="mb-1 fw-bold">
-                              {item.name}
-                            </h6>
+                            <div>
+                              <h6 className="fw-bold mb-1">
+                                {item.name}
+                              </h6>
 
-                            <small className="text-muted">
-                              {item.category}
-                            </small>
+                              <small className="text-muted">
+                                {item.category}
+                              </small>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="fw-bold">
-                        ₹ {item.price}
-                      </td>
+                        <td className="fw-bold text-success">
+                          ₹ {item.price}
+                        </td>
 
-                      <td>
-                        <div className="d-flex align-items-center">
+                        <td>
+                          <div className="d-flex align-items-center">
+                            <button
+                              className="btn btn-dark btn-sm"
+                              onClick={() =>
+                                decreaseQty(item.id)
+                              }
+                            >
+                              −
+                            </button>
+
+                            <span className="mx-3 fw-bold">
+                              {item.quantity}
+                            </span>
+
+                            <button
+                              className="btn btn-dark btn-sm"
+                              onClick={() =>
+                                increaseQty(item.id)
+                              }
+                            >
+                              +
+                            </button>
+                          </div>
+                        </td>
+
+                        <td className="fw-bold">
+                          ₹{" "}
+                          {(
+                            Number(item.price || 0) *
+                            Number(item.quantity || 1)
+                          ).toFixed(2)}
+                        </td>
+
+                        <td>
                           <button
-                            className="btn btn-sm btn-dark"
+                            className="btn btn-danger btn-sm"
                             onClick={() =>
-                              decreaseQty(item.id)
+                              removeItem(item.id)
                             }
                           >
-                            -
+                            Remove
                           </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-                          <span className="mx-3 fw-bold">
-                            {item.quantity}
-                          </span>
+              {/* Mobile View */}
 
-                          <button
-                            className="btn btn-sm btn-dark"
-                            onClick={() =>
-                              increaseQty(item.id)
-                            }
-                          >
-                            +
-                          </button>
-                        </div>
-                      </td>
-
-                      <td className="fw-bold text-success">
-                        ₹{" "}
-                        {Number(item.price) *
-                          item.quantity}
-                      </td>
-
-                      <td>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() =>
-                            removeItem(item.id)
-                          }
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Cards */}
-
-            <div className="d-md-none">
-              {cart.map((item) => (
-                <div
-                  key={item.id}
-                  className="card shadow border-0 mb-3"
-                >
-                  <div className="card-body">
-                    <div className="text-center mb-3">
-                      {item.image && (
+              <div className="d-md-none">
+                {cart.map((item) => (
+                  <div
+                    key={item.id}
+                    className="card border-0 shadow-sm mb-3 overflow-hidden"
+                  >
+                    <div className="row g-0">
+                      <div className="col-4">
                         <img
                           src={item.image}
                           alt={item.name}
-                          className="img-fluid rounded"
+                          className="img-fluid h-100 w-100"
                           style={{
-                            height: "180px",
                             objectFit: "cover",
+                            minHeight: "150px",
                           }}
                         />
-                      )}
+                      </div>
+
+                      <div className="col-8">
+                        <div className="card-body">
+                          <h6 className="fw-bold">
+                            {item.name}
+                          </h6>
+
+                          <p className="text-muted small mb-2">
+                            {item.category}
+                          </p>
+
+                          <h6 className="text-success fw-bold">
+                            ₹ {item.price}
+                          </h6>
+
+                          <div className="d-flex align-items-center my-3">
+                            <button
+                              className="btn btn-dark btn-sm"
+                              onClick={() =>
+                                decreaseQty(item.id)
+                              }
+                            >
+                              −
+                            </button>
+
+                            <span className="mx-3 fw-bold">
+                              {item.quantity}
+                            </span>
+
+                            <button
+                              className="btn btn-dark btn-sm"
+                              onClick={() =>
+                                increaseQty(item.id)
+                              }
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <h6 className="fw-bold mb-3">
+                            ₹{" "}
+                            {(
+                              Number(item.price || 0) *
+                              Number(item.quantity || 1)
+                            ).toFixed(2)}
+                          </h6>
+
+                          <button
+                            className="btn btn-danger btn-sm w-100"
+                            onClick={() =>
+                              removeItem(item.id)
+                            }
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
                     </div>
-
-                    <h5 className="fw-bold">
-                      {item.name}
-                    </h5>
-
-                    <p className="text-muted">
-                      {item.category}
-                    </p>
-
-                    <h5 className="text-success">
-                      ₹ {item.price}
-                    </h5>
-
-                    <div className="d-flex align-items-center justify-content-center my-3">
-                      <button
-                        className="btn btn-dark"
-                        onClick={() =>
-                          decreaseQty(item.id)
-                        }
-                      >
-                        -
-                      </button>
-
-                      <span className="mx-3 fw-bold">
-                        {item.quantity}
-                      </span>
-
-                      <button
-                        className="btn btn-dark"
-                        onClick={() =>
-                          increaseQty(item.id)
-                        }
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <h6 className="text-center mb-3">
-                      Subtotal: ₹{" "}
-                      {Number(item.price) *
-                        item.quantity}
-                    </h6>
-
-                    <button
-                      className="btn btn-danger w-100"
-                      onClick={() =>
-                        removeItem(item.id)
-                      }
-                    >
-                      Remove
-                    </button>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Summary */}
+
+            <div className="col-lg-4">
+              <div
+                className="card border-0 shadow-lg p-4"
+                style={{
+                  position: "sticky",
+                  top: "90px",
+                }}
+              >
+                <h4 className="fw-bold mb-4">
+                  Cart Summary
+                </h4>
+
+                <div className="d-flex justify-content-between mb-3">
+                  <span>Total Items</span>
+
+                  <span className="fw-bold">
+                    {totalItems}
+                  </span>
                 </div>
-              ))}
+
+                <div className="d-flex justify-content-between mb-3">
+                  <span>Total Price</span>
+
+                  <span className="fw-bold text-success">
+                    ₹ {totalPrice.toFixed(2)}
+                  </span>
+                </div>
+
+                <hr />
+
+                <div className="d-flex justify-content-between mb-4">
+                  <h5>Grand Total</h5>
+
+                  <h5 className="text-success fw-bold">
+                    ₹ {totalPrice.toFixed(2)}
+                  </h5>
+                </div>
+
+                <Link
+                  to="/checkout"
+                  className="btn btn-success w-100 py-3 mb-3 fw-bold"
+                >
+                  Proceed to Checkout
+                </Link>
+
+                <Link
+                  to="/products"
+                  className="btn btn-outline-dark w-100 py-3 fw-bold"
+                >
+                  Continue Shopping
+                </Link>
+              </div>
             </div>
           </div>
-
-          {/* Summary */}
-
-          <div className="col-lg-4">
-            <div className="card shadow border-0 p-4">
-              <h4 className="fw-bold mb-4">
-                Cart Summary
-              </h4>
-
-              <div className="d-flex justify-content-between mb-3">
-                <span>Total Items</span>
-
-                <span className="fw-bold">
-                  {totalItems}
-                </span>
-              </div>
-
-              <div className="d-flex justify-content-between mb-3">
-                <span>Total Price</span>
-
-                <span className="fw-bold text-success">
-                  ₹ {totalPrice}
-                </span>
-              </div>
-
-              <hr />
-
-              <div className="d-flex justify-content-between mb-4">
-                <h5>Grand Total</h5>
-
-                <h5 className="text-success">
-                  ₹ {totalPrice}
-                </h5>
-              </div>
-
-              <Link
-                to="/checkout"
-                className="btn btn-success w-100 mb-2"
-              >
-                Proceed to Checkout
-              </Link>
-
-              <Link
-                to="/products"
-                className="btn btn-outline-dark w-100"
-              >
-                Continue Shopping
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
