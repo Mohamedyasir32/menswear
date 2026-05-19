@@ -129,7 +129,7 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
-    "https://your-vercel-url.vercel.app",
+    "https://menswear-nine.vercel.app/",
 ]
 
 
