@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 
 function Navbar() {
@@ -27,10 +27,7 @@ function Navbar() {
     const wishlist = safeParse("wishlist");
 
     setCartCount(
-      cart.reduce(
-        (total, item) => total + Number(item.quantity || 1),
-        0
-      )
+      cart.reduce((total, item) => total + Number(item.quantity || 1), 0)
     );
 
     setWishlistCount(wishlist.length);
@@ -50,9 +47,7 @@ function Navbar() {
     };
   }, [updateCounts]);
 
-  const closeMenu = () => {
-    setMenuOpen(false);
-  };
+  const closeMenu = () => setMenuOpen(false);
 
   const logout = () => {
     localStorage.removeItem("access");
@@ -70,9 +65,7 @@ function Navbar() {
     const keyword = search.trim();
 
     if (keyword) {
-      navigate(
-        `/products?search=${encodeURIComponent(keyword)}`
-      );
+      navigate(`/products?search=${encodeURIComponent(keyword)}`);
     } else {
       navigate("/products");
     }
@@ -81,9 +74,7 @@ function Navbar() {
   };
 
   const navClass = ({ isActive }) =>
-    isActive
-      ? "nav-link fw-bold text-warning"
-      : "nav-link text-light";
+    isActive ? "nav-link fw-bold text-warning" : "nav-link text-light";
 
   return (
     <nav
@@ -94,20 +85,9 @@ function Navbar() {
       }}
     >
       <div className="container">
-        {/* Logo */}
-
-        <Link
-          className="navbar-brand fw-bold fs-3"
-          to="/"
-          onClick={closeMenu}
-        >
-          Mens
-          <span className="text-warning">
-            Wear
-          </span>
+        <Link className="navbar-brand fw-bold fs-3" to="/" onClick={closeMenu}>
+          Mens<span className="text-warning">Wear</span>
         </Link>
-
-        {/* Mobile Toggle */}
 
         <button
           className="navbar-toggler border-0"
@@ -118,21 +98,11 @@ function Navbar() {
           <span className="navbar-toggler-icon"></span>
         </button>
 
-        {/* Navbar Content */}
-
-        <div
-          className={`collapse navbar-collapse ${
-            menuOpen ? "show" : ""
-          }`}
-        >
-          {/* Search */}
-
+        <div className={`collapse navbar-collapse ${menuOpen ? "show" : ""}`}>
           <form
             className="d-flex mx-lg-4 my-3 my-lg-0 w-100"
             onSubmit={handleSearch}
-            style={{
-              maxWidth: "380px",
-            }}
+            style={{ maxWidth: "380px" }}
           >
             <div className="input-group">
               <input
@@ -140,145 +110,80 @@ function Navbar() {
                 className="form-control border-0 shadow-none"
                 placeholder="Search products..."
                 value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
-                style={{
-                  borderRadius:
-                    "50px 0 0 50px",
-                }}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ borderRadius: "50px 0 0 50px" }}
               />
 
               <button
                 className="btn btn-warning px-3 px-md-4 fw-bold"
                 type="submit"
-                style={{
-                  borderRadius:
-                    "0 50px 50px 0",
-                }}
+                style={{ borderRadius: "0 50px 50px 0" }}
               >
                 🔍
               </button>
             </div>
           </form>
 
-          {/* Navigation Links */}
-
           <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-2 text-center text-lg-start">
             <li className="nav-item">
-              <NavLink
-                className={navClass}
-                to="/"
-                onClick={closeMenu}
-              >
+              <NavLink className={navClass} to="/" onClick={closeMenu}>
                 Home
               </NavLink>
             </li>
 
             <li className="nav-item">
-              <NavLink
-                className={navClass}
-                to="/products"
-                onClick={closeMenu}
-              >
+              <NavLink className={navClass} to="/products" onClick={closeMenu}>
                 Products
               </NavLink>
             </li>
 
-            {/* Guest */}
-
             {!token && (
-              <>
-                <li className="nav-item">
-                  <NavLink
-                    className={navClass}
-                    to="/login"
-                    onClick={closeMenu}
-                  >
-                    Login
-                  </NavLink>
-                </li>
-
-                <li className="nav-item my-2 my-lg-0">
-                  <Link
-                    className="btn btn-warning rounded-pill px-4 fw-bold w-100"
-                    to="/register"
-                    onClick={closeMenu}
-                  >
-                    Register
-                  </Link>
-                </li>
-              </>
+              <li className="nav-item">
+                <NavLink className={navClass} to="/login" onClick={closeMenu}>
+                  Login
+                </NavLink>
+              </li>
             )}
-
-            {/* Admin */}
 
             {token && isStaff && (
               <>
                 <li className="nav-item">
-                  <NavLink
-                    className={navClass}
-                    to="/admin/dashboard"
-                    onClick={closeMenu}
-                  >
+                  <NavLink className={navClass} to="/admin/dashboard" onClick={closeMenu}>
                     Dashboard
                   </NavLink>
                 </li>
 
                 <li className="nav-item">
-                  <NavLink
-                    className={navClass}
-                    to="/admin/products"
-                    onClick={closeMenu}
-                  >
+                  <NavLink className={navClass} to="/admin/products" onClick={closeMenu}>
                     Products
                   </NavLink>
                 </li>
 
                 <li className="nav-item">
-                  <NavLink
-                    className={navClass}
-                    to="/admin/orders"
-                    onClick={closeMenu}
-                  >
+                  <NavLink className={navClass} to="/admin/orders" onClick={closeMenu}>
                     Orders
                   </NavLink>
                 </li>
 
                 <li className="nav-item">
-                  <NavLink
-                    className={navClass}
-                    to="/admin/payments"
-                    onClick={closeMenu}
-                  >
+                  <NavLink className={navClass} to="/admin/payments" onClick={closeMenu}>
                     Payments
                   </NavLink>
                 </li>
 
                 <li className="nav-item">
-                  <NavLink
-                    className={navClass}
-                    to="/admin/users"
-                    onClick={closeMenu}
-                  >
+                  <NavLink className={navClass} to="/admin/users" onClick={closeMenu}>
                     Users
                   </NavLink>
                 </li>
               </>
             )}
 
-            {/* User */}
-
             {token && !isStaff && (
               <>
                 <li className="nav-item">
-                  <NavLink
-                    className={navClass}
-                    to="/cart"
-                    onClick={closeMenu}
-                  >
+                  <NavLink className={navClass} to="/cart" onClick={closeMenu}>
                     Cart
-
                     {cartCount > 0 && (
                       <span className="badge rounded-pill bg-danger ms-1">
                         {cartCount}
@@ -288,13 +193,8 @@ function Navbar() {
                 </li>
 
                 <li className="nav-item">
-                  <NavLink
-                    className={navClass}
-                    to="/wishlist"
-                    onClick={closeMenu}
-                  >
+                  <NavLink className={navClass} to="/wishlist" onClick={closeMenu}>
                     Wishlist
-
                     {wishlistCount > 0 && (
                       <span className="badge rounded-pill bg-warning text-dark ms-1">
                         {wishlistCount}
@@ -304,38 +204,24 @@ function Navbar() {
                 </li>
 
                 <li className="nav-item">
-                  <NavLink
-                    className={navClass}
-                    to="/orders"
-                    onClick={closeMenu}
-                  >
+                  <NavLink className={navClass} to="/orders" onClick={closeMenu}>
                     Orders
                   </NavLink>
                 </li>
 
                 <li className="nav-item">
-                  <NavLink
-                    className={navClass}
-                    to="/payments"
-                    onClick={closeMenu}
-                  >
+                  <NavLink className={navClass} to="/payments" onClick={closeMenu}>
                     Payments
                   </NavLink>
                 </li>
 
                 <li className="nav-item">
-                  <NavLink
-                    className={navClass}
-                    to="/profile"
-                    onClick={closeMenu}
-                  >
+                  <NavLink className={navClass} to="/profile" onClick={closeMenu}>
                     Profile
                   </NavLink>
                 </li>
               </>
             )}
-
-            {/* Dropdown */}
 
             {token && (
               <li className="nav-item dropdown mt-2 mt-lg-0">
@@ -352,11 +238,8 @@ function Navbar() {
                       fontWeight: "bold",
                     }}
                   >
-                    {username
-                      .charAt(0)
-                      .toUpperCase()}
+                    {username.charAt(0).toUpperCase()}
                   </span>
-
                   {username}
                 </button>
 
@@ -364,31 +247,19 @@ function Navbar() {
                   {!isStaff && (
                     <>
                       <li>
-                        <Link
-                          className="dropdown-item"
-                          to="/profile"
-                          onClick={closeMenu}
-                        >
+                        <Link className="dropdown-item" to="/profile" onClick={closeMenu}>
                           My Profile
                         </Link>
                       </li>
 
                       <li>
-                        <Link
-                          className="dropdown-item"
-                          to="/orders"
-                          onClick={closeMenu}
-                        >
+                        <Link className="dropdown-item" to="/orders" onClick={closeMenu}>
                           My Orders
                         </Link>
                       </li>
 
                       <li>
-                        <Link
-                          className="dropdown-item"
-                          to="/wishlist"
-                          onClick={closeMenu}
-                        >
+                        <Link className="dropdown-item" to="/wishlist" onClick={closeMenu}>
                           Wishlist
                         </Link>
                       </li>
