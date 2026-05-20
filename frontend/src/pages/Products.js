@@ -16,8 +16,9 @@ function Products() {
   useEffect(() => {
     fetchProducts();
 
-    const savedTheme = localStorage.getItem("darkMode");
-    if (savedTheme === "true") setDarkMode(true);
+    if (localStorage.getItem("darkMode") === "true") {
+      setDarkMode(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -48,7 +49,7 @@ function Products() {
     "https://via.placeholder.com/500x600?text=No+Image";
 
   const getProductPrice = (product) =>
-    product.discount_price || product.price || 0;
+    Number(product.discount_price || product.price || 0);
 
   const getCart = () => {
     try {
@@ -104,7 +105,6 @@ function Products() {
 
     localStorage.setItem("cart", JSON.stringify(updatedCart));
     window.dispatchEvent(new Event("cartUpdated"));
-
     toast.success("Added to cart");
   };
 
@@ -129,11 +129,13 @@ function Products() {
       const productName = product.name || "";
       const productCategory = product.category || "";
       const productBrand = product.brand || "";
+      const productSku = product.sku || "";
 
       const matchesSearch =
         productName.toLowerCase().includes(keyword) ||
         productCategory.toLowerCase().includes(keyword) ||
-        productBrand.toLowerCase().includes(keyword);
+        productBrand.toLowerCase().includes(keyword) ||
+        productSku.toLowerCase().includes(keyword);
 
       const matchesCategory = !category || product.category === category;
 
@@ -162,7 +164,7 @@ function Products() {
   return (
     <div className={`min-vh-100 ${darkMode ? "bg-dark text-white" : "bg-light"}`}>
       <div className="container py-4 py-md-5">
-        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 mb-md-5">
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
           <div>
             <h1 className="fw-bold display-6 mb-2">Menswear Collection</h1>
             <p className={darkMode ? "text-light mb-0" : "text-muted mb-0"}>
@@ -178,18 +180,18 @@ function Products() {
           </button>
         </div>
 
-        <div className="row mb-4 mb-md-5">
-          <div className="col-md-8 mb-3">
+        <div className="row g-3 mb-4 mb-md-5">
+          <div className="col-12 col-md-8">
             <input
               type="text"
               className="form-control form-control-lg shadow-sm"
-              placeholder="Search products, category or brand..."
+              placeholder="Search products, category, brand or SKU..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <div className="col-md-4 mb-3">
+          <div className="col-12 col-md-4">
             <select
               className="form-select form-select-lg shadow-sm"
               value={category}
@@ -224,63 +226,95 @@ function Products() {
           <div className="row g-4">
             {currentProducts.map((product) => {
               const stock = Number(product.stock || 0);
+              const finalPrice = getProductPrice(product);
+              const hasDiscount = Boolean(product.discount_price);
+              const discountPercent =
+                hasDiscount && Number(product.price) > 0
+                  ? Math.round(
+                      ((Number(product.price) - Number(product.discount_price)) /
+                        Number(product.price)) *
+                        100
+                    )
+                  : 0;
 
               return (
                 <div className="col-12 col-sm-6 col-lg-4" key={product.id}>
                   <div
-                    className={`card border-0 shadow-lg h-100 ${
-                      darkMode ? "bg-secondary text-white" : ""
+                    className={`card border-0 shadow-lg h-100 product-card ${
+                      darkMode ? "bg-secondary text-white" : "bg-white"
                     }`}
                     style={{
-                      borderRadius: "22px",
+                      borderRadius: "24px",
                       overflow: "hidden",
                     }}
                   >
-                    <div className="position-relative">
-                      <img
-                        src={getProductImage(product)}
-                        alt={product.name || "Product"}
-                        className="card-img-top"
-                        style={{
-                          height: "260px",
-                          objectFit: "cover",
-                        }}
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            "https://via.placeholder.com/500x600?text=No+Image";
-                        }}
-                      />
+                    <div className="position-relative product-image-wrap">
+                      <Link to={`/products/${product.id}`}>
+                        <img
+                          src={getProductImage(product)}
+                          alt={product.name || "Product"}
+                          className="card-img-top product-image"
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://via.placeholder.com/500x600?text=No+Image";
+                          }}
+                        />
+                      </Link>
 
-                      {product.is_featured && (
-                        <span className="badge bg-warning text-dark position-absolute top-0 start-0 m-3 px-3 py-2">
-                          Featured
-                        </span>
-                      )}
+                      <div className="position-absolute top-0 start-0 m-3 d-flex flex-column gap-2">
+                        {product.is_featured && (
+                          <span className="badge bg-warning text-dark px-3 py-2">
+                            Featured
+                          </span>
+                        )}
+
+                        {hasDiscount && (
+                          <span className="badge bg-danger px-3 py-2">
+                            {discountPercent}% OFF
+                          </span>
+                        )}
+                      </div>
 
                       <button
-                        className="btn btn-light position-absolute top-0 end-0 m-3 rounded-circle"
+                        className="btn btn-light position-absolute top-0 end-0 m-3 rounded-circle shadow-sm"
                         onClick={() => addToWishlist(product)}
                         title="Add to wishlist"
+                        style={{
+                          width: "42px",
+                          height: "42px",
+                        }}
                       >
                         ❤
                       </button>
                     </div>
 
-                    <div className="card-body d-flex flex-column">
-                      <div className="mb-2">
+                    <div className="card-body d-flex flex-column p-3 p-md-4">
+                      <div className="d-flex justify-content-between align-items-center mb-2 gap-2">
                         <span className="badge bg-dark">
                           {product.category || "Category"}
                         </span>
+
+                        {product.sku && (
+                          <small className={darkMode ? "text-light" : "text-muted"}>
+                            SKU: {product.sku}
+                          </small>
+                        )}
                       </div>
 
-                      <h4 className="fw-bold">{product.name || "Product"}</h4>
+                      <h4 className="fw-bold mb-2 product-title">
+                        {product.name || "Product"}
+                      </h4>
 
-                      <p className={darkMode ? "text-light" : "text-muted"}>
-                        {(product.description || "").slice(0, 90)}
-                        {(product.description || "").length > 90 ? "..." : ""}
+                      <p
+                        className={`product-description ${
+                          darkMode ? "text-light" : "text-muted"
+                        }`}
+                      >
+                        {(product.description || "").slice(0, 85)}
+                        {(product.description || "").length > 85 ? "..." : ""}
                       </p>
 
-                      <div className="d-flex gap-2 flex-wrap mb-2">
+                      <div className="d-flex gap-2 flex-wrap mb-3">
                         {product.size && (
                           <span className="badge bg-primary">
                             Size: {product.size}
@@ -313,26 +347,26 @@ function Products() {
                       </div>
 
                       <div className="mb-3">
-                        {product.discount_price ? (
-                          <>
-                            <h3 className="text-success fw-bold mb-0">
-                              ₹ {product.discount_price}
-                            </h3>
+                        <h3 className="text-success fw-bold mb-0">
+                          ₹ {finalPrice.toLocaleString("en-IN")}
+                        </h3>
+
+                        {hasDiscount && (
+                          <div>
                             <span className="text-decoration-line-through text-muted">
-                              ₹ {product.price}
+                              ₹ {Number(product.price || 0).toLocaleString("en-IN")}
                             </span>
-                          </>
-                        ) : (
-                          <h3 className="text-success fw-bold">
-                            ₹ {product.price}
-                          </h3>
+                            <span className="text-danger fw-semibold ms-2">
+                              Save {discountPercent}%
+                            </span>
+                          </div>
                         )}
                       </div>
 
-                      <div className="mt-auto">
+                      <div className="mt-auto d-grid gap-2">
                         <Link
                           to={`/products/${product.id}`}
-                          className={`btn w-100 mb-2 ${
+                          className={`btn ${
                             darkMode ? "btn-light" : "btn-outline-dark"
                           }`}
                         >
@@ -340,7 +374,7 @@ function Products() {
                         </Link>
 
                         <button
-                          className="btn btn-dark w-100"
+                          className="btn btn-dark"
                           onClick={() => addToCart(product)}
                           disabled={stock <= 0}
                         >
@@ -379,6 +413,55 @@ function Products() {
           </div>
         )}
       </div>
+
+      <style>
+        {`
+          .product-card {
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+          }
+
+          .product-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.18) !important;
+          }
+
+          .product-image-wrap {
+            height: 280px;
+            overflow: hidden;
+            background: #f8f9fa;
+          }
+
+          .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.35s ease;
+          }
+
+          .product-card:hover .product-image {
+            transform: scale(1.06);
+          }
+
+          .product-title {
+            min-height: 58px;
+          }
+
+          .product-description {
+            min-height: 48px;
+          }
+
+          @media (max-width: 575px) {
+            .product-image-wrap {
+              height: 330px;
+            }
+
+            .product-title,
+            .product-description {
+              min-height: auto;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }
