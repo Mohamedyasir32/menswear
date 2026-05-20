@@ -22,18 +22,11 @@ import EditProduct from "./pages/admin/EditProduct";
 import Orders from "./pages/admin/Orders";
 import OrderDetails from "./pages/admin/OrderDetails";
 import Payments from "./pages/admin/Payments";
+import Coupons from "./pages/admin/Coupons";
 import Users from "./pages/admin/Users";
 import { ToastContainer } from "react-toastify";
 import Analytics from "./pages/admin/Analytics";
 
-<Route
-  path="/admin/analytics"
-  element={
-    <ProtectedRoute adminOnly>
-      <Analytics />
-    </ProtectedRoute>
-  }
-/>
 
 function App() {
   return (
@@ -67,6 +60,7 @@ function App() {
         <Route path="/admin/edit-product/:id" element={<ProtectedRoute adminOnly><EditProduct /></ProtectedRoute>} />
         <Route path="/admin/orders" element={<ProtectedRoute adminOnly><Orders /></ProtectedRoute>} />
         <Route path="/admin/orders/:id" element={<ProtectedRoute adminOnly><OrderDetails /></ProtectedRoute>} />
+        <Route path="/admin/coupons"element={<ProtectedRoute adminOnly={true}><Coupons /></ProtectedRoute> }/>
         <Route path="/admin/payments" element={<ProtectedRoute adminOnly><Payments /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute adminOnly><Users /></ProtectedRoute>} />
         <Route path="/admin/analytics"element={<ProtectedRoute adminOnly><Analytics /></ProtectedRoute>

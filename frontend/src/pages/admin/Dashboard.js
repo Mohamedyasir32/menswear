@@ -102,6 +102,14 @@ function Dashboard() {
         button: "View Users",
         color: "btn-info",
       },
+      {
+       icon: "📊",
+       title: "Analytics",
+       text: "View sales, revenue and performance reports",
+       link: "/admin/analytics",
+       button: "View Analytics",
+       color: "btn-info",
+      },
     ],
     []
   );

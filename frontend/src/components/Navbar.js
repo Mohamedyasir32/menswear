@@ -297,6 +297,11 @@ function Navbar() {
                           Manage Orders
                         </Link>
                       </li>
+                      <li className="nav-item">
+  <NavLink className={navClass} to="/admin/coupons" onClick={closeMenu}>
+    Coupons
+  </NavLink>
+</li>
                     </>
                   )}
 

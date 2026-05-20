@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 import API from "../api/axios";
 
 function Products() {
@@ -16,13 +17,11 @@ function Products() {
     fetchProducts();
 
     const savedTheme = localStorage.getItem("darkMode");
-    if (savedTheme === "true") {
-      setDarkMode(true);
-    }
+    if (savedTheme === "true") setDarkMode(true);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("darkMode", darkMode);
+    localStorage.setItem("darkMode", String(darkMode));
   }, [darkMode]);
 
   useEffect(() => {
@@ -37,47 +36,47 @@ function Products() {
       setProducts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.log(error.response?.data || error);
-      alert("Failed to load products");
+      toast.error("Failed to load products");
     } finally {
       setLoading(false);
     }
   };
 
-  const getProductImage = (product) => {
-    return (
-      product.image_url ||
-      product.image ||
-      "https://via.placeholder.com/500x600?text=No+Image"
-    );
-  };
+  const getProductImage = (product) =>
+    product.image_url ||
+    product.image ||
+    "https://via.placeholder.com/500x600?text=No+Image";
 
-  const getProductPrice = (product) => {
-    return product.discount_price || product.price || 0;
+  const getProductPrice = (product) =>
+    product.discount_price || product.price || 0;
+
+  const getCart = () => {
+    try {
+      const data = JSON.parse(localStorage.getItem("cart"));
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
   };
 
   const addToCart = (product) => {
     const stock = Number(product.stock || 0);
 
     if (stock <= 0) {
-      alert("This product is out of stock");
+      toast.error("This product is out of stock");
       return;
     }
 
-    let cart = [];
-
-    try {
-      cart = JSON.parse(localStorage.getItem("cart")) || [];
-    } catch {
-      cart = [];
-    }
-
+    const cart = getCart();
     const exists = cart.find((item) => item.id === product.id);
 
     let updatedCart;
 
     if (exists) {
-      if (Number(exists.quantity || 1) + 1 > stock) {
-        alert("Quantity cannot be more than stock");
+      const newQuantity = Number(exists.quantity || 1) + 1;
+
+      if (newQuantity > stock) {
+        toast.error("Quantity cannot be more than stock");
         return;
       }
 
@@ -85,7 +84,7 @@ function Products() {
         item.id === product.id
           ? {
               ...item,
-              quantity: Number(item.quantity || 1) + 1,
+              quantity: newQuantity,
               price: getProductPrice(product),
               image: getProductImage(product),
             }
@@ -106,7 +105,7 @@ function Products() {
     localStorage.setItem("cart", JSON.stringify(updatedCart));
     window.dispatchEvent(new Event("cartUpdated"));
 
-    alert("Added to cart");
+    toast.success("Added to cart");
   };
 
   const addToWishlist = async (product) => {
@@ -116,10 +115,10 @@ function Products() {
       });
 
       window.dispatchEvent(new Event("wishlistUpdated"));
-      alert("Added to wishlist");
+      toast.success("Added to wishlist");
     } catch (error) {
       console.log(error.response?.data || error);
-      alert("Please login or product already added");
+      toast.error("Please login or product already added");
     }
   };
 
@@ -136,7 +135,7 @@ function Products() {
         productCategory.toLowerCase().includes(keyword) ||
         productBrand.toLowerCase().includes(keyword);
 
-      const matchesCategory = category === "" || product.category === category;
+      const matchesCategory = !category || product.category === category;
 
       return matchesSearch && matchesCategory;
     });
@@ -151,26 +150,21 @@ function Products() {
 
   if (loading) {
     return (
-      <div className="container mt-5 text-center">
-        <div className="spinner-border text-dark" role="status"></div>
-        <p className="mt-3">Loading products...</p>
+      <div className="min-vh-100 d-flex align-items-center justify-content-center">
+        <div className="text-center">
+          <div className="spinner-border text-dark" role="status"></div>
+          <p className="mt-3 text-muted">Loading products...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      className={`min-vh-100 ${
-        darkMode ? "bg-dark text-white" : "bg-light"
-      }`}
-    >
+    <div className={`min-vh-100 ${darkMode ? "bg-dark text-white" : "bg-light"}`}>
       <div className="container py-4 py-md-5">
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 mb-md-5">
           <div>
-            <h1 className="fw-bold display-6 display-md-5 mb-2">
-              Menswear Collection
-            </h1>
-
+            <h1 className="fw-bold display-6 mb-2">Menswear Collection</h1>
             <p className={darkMode ? "text-light mb-0" : "text-muted mb-0"}>
               Discover premium fashion products
             </p>
@@ -178,7 +172,7 @@ function Products() {
 
           <button
             className={`btn ${darkMode ? "btn-light" : "btn-dark"}`}
-            onClick={() => setDarkMode(!darkMode)}
+            onClick={() => setDarkMode((prev) => !prev)}
           >
             {darkMode ? "☀ Light Mode" : "🌙 Dark Mode"}
           </button>
@@ -215,7 +209,16 @@ function Products() {
         {currentProducts.length === 0 ? (
           <div className="card border-0 shadow text-center py-5">
             <h3>No products found</h3>
-            <p className="text-muted mb-0">Try another search or category</p>
+            <p className="text-muted mb-3">Try another search or category</p>
+            <button
+              className="btn btn-dark mx-auto"
+              onClick={() => {
+                setSearch("");
+                setCategory("");
+              }}
+            >
+              Clear Filters
+            </button>
           </div>
         ) : (
           <div className="row g-4">
@@ -270,14 +273,12 @@ function Products() {
                         </span>
                       </div>
 
-                      <h4 className="fw-bold">{product.name}</h4>
+                      <h4 className="fw-bold">{product.name || "Product"}</h4>
 
                       <p className={darkMode ? "text-light" : "text-muted"}>
                         {(product.description || "").slice(0, 90)}
                         {(product.description || "").length > 90 ? "..." : ""}
                       </p>
-
-                      <div className="mb-2 text-warning">⭐⭐⭐⭐⭐</div>
 
                       <div className="d-flex gap-2 flex-wrap mb-2">
                         {product.size && (
@@ -317,7 +318,6 @@ function Products() {
                             <h3 className="text-success fw-bold mb-0">
                               ₹ {product.discount_price}
                             </h3>
-
                             <span className="text-decoration-line-through text-muted">
                               ₹ {product.price}
                             </span>

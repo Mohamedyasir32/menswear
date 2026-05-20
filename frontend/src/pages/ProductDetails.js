@@ -1,375 +1,221 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import API from "../api/axios";
 
-function ProductDetails() {
-  const { id } = useParams();
+function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [product, setProduct] = useState(null);
-  const [quantity, setQuantity] = useState(1);
-  const [reviews, setReviews] = useState([]);
-  const [recentProducts, setRecentProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const [review, setReview] = useState({
-    rating: 5,
-    comment: "",
+  const [form, setForm] = useState({
+    username: "",
+    password: "",
+    remember: false,
   });
 
-  useEffect(() => {
-    const fetchProductAndReviews = async () => {
-      try {
-        const productResponse = await API.get(`products/${id}/`);
-        setProduct(productResponse.data);
+  const from = location.state?.from?.pathname;
 
-        const reviewResponse = await API.get(`products/${id}/reviews/`);
-        setReviews(reviewResponse.data);
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
 
-        saveRecentlyViewed(productResponse.data);
-        loadRecentlyViewed(productResponse.data.id);
-      } catch (error) {
-        console.log(error);
-        alert("Product not found");
-      }
-    };
-
-    fetchProductAndReviews();
-  }, [id]);
-
-  const getProductImage = (item) => {
-    return item?.image_url || item?.image || "https://via.placeholder.com/500x600?text=No+Image";
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
-  const saveRecentlyViewed = (productData) => {
-    const recent = JSON.parse(localStorage.getItem("recentProducts")) || [];
-    const filtered = recent.filter((item) => item.id !== productData.id);
-    const updated = [productData, ...filtered].slice(0, 5);
+  const getErrorMessage = (error) => {
+    const data = error.response?.data;
 
-    localStorage.setItem("recentProducts", JSON.stringify(updated));
-  };
-
-  const loadRecentlyViewed = (currentId) => {
-    const recent = JSON.parse(localStorage.getItem("recentProducts")) || [];
-    setRecentProducts(recent.filter((item) => item.id !== currentId).slice(0, 4));
-  };
-
-  const averageRating =
-    reviews.length > 0
-      ? (
-          reviews.reduce((total, item) => total + Number(item.rating), 0) /
-          reviews.length
-        ).toFixed(1)
-      : "0.0";
-
-  const finalPrice = product?.discount_price || product?.price;
-
-  const addToCart = () => {
-    if (!product) return;
-
-    if (quantity < 1) {
-      alert("Quantity must be at least 1");
-      return;
+    if (!data) {
+      return "Login failed. Please check your internet or backend server.";
     }
 
-    if (quantity > product.stock) {
-      alert("Quantity cannot be more than stock");
-      return;
-    }
+    if (typeof data === "string") return data;
+    if (data.detail) return data.detail;
 
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const exists = cart.find((item) => item.id === product.id);
-
-    let updatedCart;
-
-    if (exists) {
-      updatedCart = cart.map((item) =>
-        item.id === product.id
-          ? { ...item, quantity: item.quantity + quantity }
-          : item
-      );
-    } else {
-      updatedCart = [
-        ...cart,
-        {
-          ...product,
-          price: finalPrice,
-          image: getProductImage(product),
-          quantity,
-        },
-      ];
-    }
-
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
-    alert("Added to cart");
+    return "Invalid username or password.";
   };
 
-  const addWishlist = async () => {
-    try {
-      await API.post("wishlist/", {
-        product: product.id,
-      });
-
-      alert("Added to wishlist");
-    } catch (error) {
-      console.log(error);
-      alert("Please login or product already added");
-    }
-  };
-
-  const submitReview = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const username = form.username.trim();
+    const password = form.password.trim();
+
+    if (!username || !password) {
+      toast.error("Please enter username and password");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      await API.post(`products/${id}/reviews/`, {
-        rating: review.rating,
-        comment: review.comment,
+      const loginResponse = await API.post("login/", {
+        username,
+        password,
       });
 
-      alert("Review submitted");
+      localStorage.setItem("access", loginResponse.data.access);
+      localStorage.setItem("refresh", loginResponse.data.refresh);
 
-      const response = await API.get(`products/${id}/reviews/`);
-      setReviews(response.data);
+      const userResponse = await API.get("me/");
+      const user = userResponse.data || {};
 
-      setReview({
-        rating: 5,
-        comment: "",
-      });
+      localStorage.setItem("username", user.username || username);
+      localStorage.setItem("is_staff", String(Boolean(user.is_staff)));
+
+      toast.success("Login successful");
+
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (user.is_staff) {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/products");
+      }
     } catch (error) {
-      console.log(error);
-      alert("Login required or already reviewed");
+      console.log(error.response?.data || error);
+      toast.error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (!product) {
-    return (
-      <div className="container mt-5 text-center">
-        <div className="spinner-border text-dark" role="status"></div>
-        <p className="mt-3">Loading product...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-vh-100 py-5" style={{ background: "#f5f7fa" }}>
+    <div
+      className="min-vh-100 d-flex align-items-center py-4 px-2"
+      style={{
+        background: "linear-gradient(135deg, #000000, #343a40)",
+      }}
+    >
       <div className="container">
-        <div className="card border-0 shadow-lg p-4 mb-5">
-          <div className="row g-4 align-items-center">
-            <div className="col-md-5">
-              <img
-                src={getProductImage(product)}
-                alt={product.name}
-                className="img-fluid rounded shadow-sm"
-                style={{
-                  width: "100%",
-                  maxHeight: "520px",
-                  objectFit: "cover",
-                }}
-              />
-            </div>
+        <div className="row justify-content-center align-items-center g-4">
+          <div className="col-lg-5 d-none d-lg-block text-white">
+            <h1 className="fw-bold display-4">Welcome Back</h1>
 
-            <div className="col-md-7">
-              <span className="badge bg-dark mb-3">{product.category}</span>
+            <p className="lead mt-4">
+              Login to continue shopping premium menswear fashion and manage
+              your orders.
+            </p>
 
-              {product.is_featured && (
-                <span className="badge bg-warning text-dark mb-3 ms-2">
-                  Featured
-                </span>
-              )}
-
-              <h1 className="fw-bold">{product.name}</h1>
-
-              <div className="mb-3">
-                <span className="text-warning fs-4">⭐ {averageRating}</span>
-                <span className="text-muted ms-2">({reviews.length} reviews)</span>
-              </div>
-
-              <div className="mb-3">
-                <h2 className="text-success fw-bold mb-0">₹ {finalPrice}</h2>
-
-                {product.discount_price && (
-                  <p className="text-muted text-decoration-line-through mb-0">
-                    ₹ {product.price}
-                  </p>
-                )}
-              </div>
-
-              <p className="text-muted mt-3">{product.description}</p>
-
-              <div className="d-flex gap-2 mb-3 flex-wrap">
-                <span className="badge bg-secondary">Size: {product.size}</span>
-
-                {product.color && (
-                  <span className="badge bg-dark">Color: {product.color}</span>
-                )}
-
-                {product.brand && (
-                  <span className="badge bg-info text-dark">Brand: {product.brand}</span>
-                )}
-
-                <span
-                  className={`badge ${
-                    product.stock > 5
-                      ? "bg-success"
-                      : product.stock > 0
-                      ? "bg-warning text-dark"
-                      : "bg-danger"
-                  }`}
-                >
-                  {product.stock > 5
-                    ? `In Stock: ${product.stock}`
-                    : product.stock > 0
-                    ? `Low Stock: ${product.stock}`
-                    : "Out of Stock"}
-                </span>
-              </div>
-
-              <div className="d-flex align-items-center gap-3 mb-4">
-                <label className="fw-semibold">Quantity</label>
-
-                <input
-                  type="number"
-                  className="form-control"
-                  style={{ width: "100px" }}
-                  value={quantity}
-                  min="1"
-                  max={product.stock}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  disabled={product.stock <= 0}
-                />
-              </div>
-
-              <div className="d-flex flex-wrap gap-2">
-                <button
-                  className="btn btn-dark px-4"
-                  onClick={addToCart}
-                  disabled={product.stock <= 0}
-                >
-                  {product.stock <= 0 ? "Out of Stock" : "Add to Cart"}
-                </button>
-
-                <button className="btn btn-outline-danger px-4" onClick={addWishlist}>
-                  Add to Wishlist
-                </button>
-
-                <Link to="/cart" className="btn btn-success px-4">
-                  Go to Cart
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card border-0 shadow-lg p-4 mb-5">
-          <div className="d-flex justify-content-between align-items-center flex-wrap mb-4">
-            <div>
-              <h3 className="fw-bold">Reviews & Ratings</h3>
-              <p className="text-muted mb-0">Customer feedback for this product</p>
-            </div>
-
-            <div className="text-end">
-              <h2 className="text-warning mb-0">⭐ {averageRating}</h2>
-              <small className="text-muted">{reviews.length} total reviews</small>
+            <div className="mt-5 fs-5">
+              <div className="mb-3">🔥 Trending Fashion</div>
+              <div className="mb-3">🚚 Fast Delivery</div>
+              <div className="mb-3">💳 Secure Payments</div>
+              <div className="mb-3">⭐ Premium Quality</div>
             </div>
           </div>
 
-          <form onSubmit={submitReview} className="card bg-light border-0 p-3 mb-4">
-            <h5 className="fw-bold">Write a Review</h5>
-
-            <select
-              className="form-select mb-3"
-              value={review.rating}
-              onChange={(e) =>
-                setReview({
-                  ...review,
-                  rating: e.target.value,
-                })
-              }
+          <div className="col-12 col-sm-10 col-md-8 col-lg-5">
+            <div
+              className="card border-0 shadow-lg"
+              style={{ borderRadius: "24px" }}
             >
-              <option value="5">5 Star</option>
-              <option value="4">4 Star</option>
-              <option value="3">3 Star</option>
-              <option value="2">2 Star</option>
-              <option value="1">1 Star</option>
-            </select>
-
-            <textarea
-              className="form-control mb-3"
-              rows="4"
-              placeholder="Write your review"
-              value={review.comment}
-              onChange={(e) =>
-                setReview({
-                  ...review,
-                  comment: e.target.value,
-                })
-              }
-              required
-            />
-
-            <button className="btn btn-dark">Submit Review</button>
-          </form>
-
-          {reviews.length === 0 ? (
-            <div className="text-center text-muted p-4">
-              No reviews yet. Be the first to review this product.
-            </div>
-          ) : (
-            reviews.map((item) => (
-              <div className="card border-0 shadow-sm p-3 mb-3" key={item.id}>
-                <div className="d-flex justify-content-between">
-                  <strong>{item.username}</strong>
-                  <span className="text-warning">⭐ {item.rating}</span>
+              <div className="card-body p-4 p-md-5">
+                <div className="text-center mb-4">
+                  <h2 className="fw-bold">Login</h2>
+                  <p className="text-muted mb-0">Sign in to your account</p>
                 </div>
 
-                <p className="mb-1 mt-2">{item.comment}</p>
+                <form onSubmit={handleSubmit}>
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Username</label>
+                    <input
+                      type="text"
+                      name="username"
+                      className="form-control form-control-lg"
+                      placeholder="Enter username"
+                      value={form.username}
+                      onChange={handleChange}
+                      autoComplete="username"
+                      required
+                    />
+                  </div>
 
-                {item.created_at && (
-                  <small className="text-muted">
-                    {new Date(item.created_at).toLocaleString()}
-                  </small>
-                )}
-              </div>
-            ))
-          )}
-        </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Password</label>
 
-        {recentProducts.length > 0 && (
-          <div className="card border-0 shadow-lg p-4">
-            <h3 className="fw-bold mb-4">Recently Viewed</h3>
-
-            <div className="row">
-              {recentProducts.map((item) => (
-                <div className="col-md-3 mb-3" key={item.id}>
-                  <Link
-                    to={`/products/${item.id}`}
-                    className="text-decoration-none text-dark"
-                  >
-                    <div className="card h-100 border-0 shadow-sm">
-                      <img
-                        src={getProductImage(item)}
-                        alt={item.name}
-                        className="card-img-top"
-                        style={{
-                          height: "170px",
-                          objectFit: "cover",
-                        }}
+                    <div className="input-group">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        className="form-control form-control-lg"
+                        placeholder="Enter password"
+                        value={form.password}
+                        onChange={handleChange}
+                        autoComplete="current-password"
+                        required
                       />
 
-                      <div className="card-body">
-                        <h6 className="fw-bold">{item.name}</h6>
-                        <p className="text-success mb-0">
-                          ₹ {item.discount_price || item.price}
-                        </p>
-                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                      >
+                        {showPassword ? "Hide" : "Show"}
+                      </button>
                     </div>
-                  </Link>
+                  </div>
+
+                  <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
+                    <div className="form-check">
+                      <input
+                        id="remember"
+                        className="form-check-input"
+                        type="checkbox"
+                        name="remember"
+                        checked={form.remember}
+                        onChange={handleChange}
+                      />
+
+                      <label className="form-check-label" htmlFor="remember">
+                        Remember me
+                      </label>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-link text-decoration-none p-0"
+                      onClick={() =>
+                        toast.info("Forgot password feature coming soon")
+                      }
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn btn-dark w-100 py-3 fw-bold"
+                    disabled={loading}
+                  >
+                    {loading ? "Logging in..." : "Login"}
+                  </button>
+                </form>
+
+                <div className="text-center mt-4">
+                  <p className="mb-0">
+                    New to MensWear?{" "}
+                    <Link to="/register" className="fw-bold text-dark">
+                      Create account
+                    </Link>
+                  </p>
                 </div>
-              ))}
+              </div>
+            </div>
+
+            <div className="text-center text-white mt-4">
+              <small>MensWear Fashion Store © 2026</small>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
 }
 
-export default ProductDetails;
+export default Login;
