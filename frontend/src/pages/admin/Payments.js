@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../../api/axios";
 
-function Payments() {
+function AdminPayments() {
   const [payments, setPayments] = useState([]);
   const [search, setSearch] = useState("");
   const [methodFilter, setMethodFilter] = useState("all");
@@ -45,11 +45,9 @@ function Payments() {
         method.toLowerCase().includes(keyword) ||
         status.includes(keyword);
 
-      const matchesMethod =
-        methodFilter === "all" || method === methodFilter;
+      const matchesMethod = methodFilter === "all" || method === methodFilter;
 
-      const matchesStatus =
-        statusFilter === "all" || status === statusFilter;
+      const matchesStatus = statusFilter === "all" || status === statusFilter;
 
       return matchesSearch && matchesMethod && matchesStatus;
     });
@@ -394,4 +392,4 @@ function Payments() {
   );
 }
 
-export default Payments;
+export default AdminPayments;
