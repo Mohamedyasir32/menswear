@@ -13,7 +13,7 @@ import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
 import Wishlist from "./pages/Wishlist";
 import Checkout from "./pages/Checkout";
-import Orders from "./pages/Orders";
+import Orders from "./pages/MyOrders";
 import Payments from "./pages/Payments";
 import Invoice from "./pages/Invoice";
 import Profile from "./pages/Profile";
@@ -70,7 +70,7 @@ function App() {
         />
 
         <Route
-          path="/orders"
+          path="/myorders"
           element={
             <ProtectedRoute>
               <Orders />
