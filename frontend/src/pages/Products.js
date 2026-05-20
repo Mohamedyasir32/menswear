@@ -361,15 +361,14 @@ function Products() {
                       </div>
 
                       <div className="mt-auto d-grid gap-1">
-                        <button
-                          type="button"
+                        <button  type="button"
                           className={`btn action-btn ${
-                            darkMode ? "btn-light" : "btn-outline-dark"
-                          }`}
-                           onClick={() => navigate(`/products/${product.id}`)}
-                        >
-                          View
-                        </button>
+                           darkMode ? "btn-light" : "btn-outline-dark"
+                            }`}
+                            onClick={() => navigate(`/products/${product.id}`)}
+                            >
+                             View
+                           </button>
 
                         <button
                           type="button"
