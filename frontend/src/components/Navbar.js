@@ -329,7 +329,7 @@ function Navbar() {
                     to="/admin/products"
                     onClick={closeMenu}
                   >
-                    Products
+                   Add Products
                   </NavLink>
 
                 </li>
