@@ -366,7 +366,7 @@ function Products() {
                           className={`btn action-btn ${
                             darkMode ? "btn-light" : "btn-outline-dark"
                           }`}
-                          onClick={() => viewProduct(product.id)}
+                           onClick={() => navigate(`/products/${product.id}`)}
                         >
                           View
                         </button>
