@@ -170,6 +170,11 @@ function Navbar() {
                     Payments
                   </NavLink>
                 </li>
+                <li className="nav-item">
+                 <NavLink className={navClass} to="/admin/coupons" onClick={closeMenu}>
+                   Coupons
+                 </NavLink>
+                </li>
 
                 <li className="nav-item">
                   <NavLink className={navClass} to="/admin/users" onClick={closeMenu}>
@@ -297,11 +302,7 @@ function Navbar() {
                           Manage Orders
                         </Link>
                       </li>
-                      <li className="nav-item">
-  <NavLink className={navClass} to="/admin/coupons" onClick={closeMenu}>
-    Coupons
-  </NavLink>
-</li>
+       
                     </>
                   )}
 
