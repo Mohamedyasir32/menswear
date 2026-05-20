@@ -36,7 +36,7 @@ function App() {
       {/* your BrowserRouter code */}
       <ToastContainer position="top-right" autoClose={2500} />
     </>
-  );
+  
 
       <Routes>
         <Route path="/" element={<Home />} />
