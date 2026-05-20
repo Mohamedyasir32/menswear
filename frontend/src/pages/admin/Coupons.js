@@ -416,7 +416,59 @@ function Coupons() {
           </div>
         </div>
 
+        {/* Stats */}
+
+        <div className="row g-3 mb-4">
+
+          <div className="col-md-4">
+
+            <div className="card border-0 shadow-sm text-center p-3">
+
+              <h3 className="fw-bold mb-0">
+                {coupons.length}
+              </h3>
+
+              <small className="text-muted">
+                Total Coupons
+              </small>
+
+            </div>
+          </div>
+
+          <div className="col-md-4">
+
+            <div className="card border-0 shadow-sm text-center p-3">
+
+              <h3 className="fw-bold text-success mb-0">
+                {activeCoupons}
+              </h3>
+
+              <small className="text-muted">
+                Active Coupons
+              </small>
+
+            </div>
+          </div>
+
+          <div className="col-md-4">
+
+            <div className="card border-0 shadow-sm text-center p-3">
+
+              <h3 className="fw-bold text-secondary mb-0">
+                {inactiveCoupons}
+              </h3>
+
+              <small className="text-muted">
+                Inactive Coupons
+              </small>
+
+            </div>
+          </div>
+        </div>
+
         <div className="row g-4">
+
+          {/* Form */}
 
           <div className="col-lg-4">
 
@@ -497,10 +549,23 @@ function Coupons() {
 
                   </button>
 
+                  {editId && (
+
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary w-100 mt-2"
+                      onClick={resetForm}
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+
                 </form>
               </div>
             </div>
           </div>
+
+          {/* Table */}
 
           <div className="col-lg-8">
 
@@ -570,83 +635,99 @@ function Coupons() {
 
                     <tbody>
 
-                      {filteredCoupons.map(
-                        (coupon) => (
+                      {filteredCoupons.length === 0 ? (
 
-                          <tr key={coupon.id}>
+                        <tr>
 
-                            <td className="fw-bold">
-                              {coupon.code}
-                            </td>
+                          <td
+                            colSpan="4"
+                            className="text-center py-5"
+                          >
+                            No coupons found
+                          </td>
 
-                            <td>
-                              {
-                                coupon.discount_percent
-                              }%
-                            </td>
+                        </tr>
 
-                            <td>
+                      ) : (
 
-                              <span
-                                className={`badge ${
-                                  coupon.active
-                                    ? "bg-success"
-                                    : "bg-secondary"
-                                }`}
-                              >
-                                {coupon.active
-                                  ? "Active"
-                                  : "Inactive"}
-                              </span>
+                        filteredCoupons.map(
+                          (coupon) => (
 
-                            </td>
+                            <tr key={coupon.id}>
 
-                            <td>
+                              <td className="fw-bold">
+                                {coupon.code}
+                              </td>
 
-                              <div className="d-flex gap-2 flex-wrap">
+                              <td>
+                                {
+                                  coupon.discount_percent
+                                }%
+                              </td>
 
-                                <button
-                                  className="btn btn-warning btn-sm"
-                                  onClick={() =>
-                                    editCoupon(
-                                      coupon
-                                    )
-                                  }
-                                >
-                                  Edit
-                                </button>
+                              <td>
 
-                                <button
-                                  className={`btn btn-sm ${
+                                <span
+                                  className={`badge ${
                                     coupon.active
-                                      ? "btn-outline-secondary"
-                                      : "btn-success"
+                                      ? "bg-success"
+                                      : "bg-secondary"
                                   }`}
-                                  onClick={() =>
-                                    toggleCoupon(
-                                      coupon
-                                    )
-                                  }
                                 >
                                   {coupon.active
-                                    ? "Deactivate"
-                                    : "Activate"}
-                                </button>
+                                    ? "Active"
+                                    : "Inactive"}
+                                </span>
 
-                                <button
-                                  className="btn btn-danger btn-sm"
-                                  onClick={() =>
-                                    deleteCoupon(
-                                      coupon.id
-                                    )
-                                  }
-                                >
-                                  Delete
-                                </button>
+                              </td>
 
-                              </div>
-                            </td>
-                          </tr>
+                              <td>
+
+                                <div className="d-flex gap-2 flex-wrap">
+
+                                  <button
+                                    className="btn btn-warning btn-sm"
+                                    onClick={() =>
+                                      editCoupon(
+                                        coupon
+                                      )
+                                    }
+                                  >
+                                    Edit
+                                  </button>
+
+                                  <button
+                                    className={`btn btn-sm ${
+                                      coupon.active
+                                        ? "btn-outline-secondary"
+                                        : "btn-success"
+                                    }`}
+                                    onClick={() =>
+                                      toggleCoupon(
+                                        coupon
+                                      )
+                                    }
+                                  >
+                                    {coupon.active
+                                      ? "Deactivate"
+                                      : "Activate"}
+                                  </button>
+
+                                  <button
+                                    className="btn btn-danger btn-sm"
+                                    onClick={() =>
+                                      deleteCoupon(
+                                        coupon.id
+                                      )
+                                    }
+                                  >
+                                    Delete
+                                  </button>
+
+                                </div>
+                              </td>
+                            </tr>
+                          )
                         )
                       )}
 
