@@ -238,7 +238,7 @@ function Products() {
                   : 0;
 
               return (
-                <div className="col-6 col-md-4 col-lg-3" key={product.id}>
+                <div className="col-6 col-md-4 col-xl-3" key={product.id}>
                   <div
                     className={`card border-0 shadow-sm h-100 product-card ${
                       darkMode ? "bg-secondary text-white" : "bg-white"
@@ -306,8 +306,8 @@ function Products() {
                           darkMode ? "text-light" : "text-muted"
                         }`}
                       >
-                        {(product.description || "").slice(0, 45)}
-                        {(product.description || "").length > 45 ? "..." : ""}
+                        {(product.description || "").slice(0, 38)}
+                        {(product.description || "").length > 38 ? "..." : ""}
                       </p>
 
                       <div className="d-flex gap-1 flex-wrap mb-2">
@@ -347,16 +347,17 @@ function Products() {
                       </div>
 
                       <div className="mb-2">
-                        <h5 className="text-success fw-bold mb-0">
+                        <h6 className="text-success fw-bold mb-0 price-text">
                           ₹ {finalPrice.toLocaleString("en-IN")}
-                        </h5>
+                        </h6>
 
                         {hasDiscount && (
                           <div>
-                            <small className="text-decoration-line-through text-muted">
+                            <small className="text-decoration-line-through text-muted old-price">
                               ₹ {Number(product.price || 0).toLocaleString("en-IN")}
                             </small>
-                            <small className="text-danger fw-semibold ms-1">
+
+                            <small className="text-danger fw-semibold ms-1 old-price">
                               Save {discountPercent}%
                             </small>
                           </div>
@@ -366,7 +367,7 @@ function Products() {
                       <div className="mt-auto d-grid gap-1">
                         <Link
                           to={`/products/${product.id}`}
-                          className={`btn btn-sm py-2 ${
+                          className={`btn action-btn ${
                             darkMode ? "btn-light" : "btn-outline-dark"
                           }`}
                         >
@@ -374,7 +375,7 @@ function Products() {
                         </Link>
 
                         <button
-                          className="btn btn-dark btn-sm py-2"
+                          className="btn btn-dark action-btn"
                           onClick={() => addToCart(product)}
                           disabled={stock <= 0}
                         >
@@ -417,87 +418,115 @@ function Products() {
       <style>
         {`
           .product-card {
-            border-radius: 18px;
+            border-radius: 16px;
             overflow: hidden;
             transition: all 0.3s ease;
             border: 1px solid rgba(0,0,0,0.05) !important;
+            background: #fff;
           }
 
           .product-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.12) !important;
+            transform: translateY(-6px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.12) !important;
           }
 
           .product-image-wrap {
-            height: 220px;
+            height: 180px;
             overflow: hidden;
             background: #f8f9fa;
+            position: relative;
           }
 
           .product-image {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.4s ease;
+            transition: transform 0.35s ease;
           }
 
           .product-card:hover .product-image {
-            transform: scale(1.08);
+            transform: scale(1.05);
           }
 
           .product-title {
-            min-height: 40px;
-            font-size: 15px;
+            font-size: 14px;
             line-height: 1.3;
+            min-height: 36px;
+            margin-bottom: 4px;
           }
 
           .product-description {
-            min-height: 34px;
-            font-size: 13px;
+            font-size: 11px;
             line-height: 1.3;
+            min-height: 28px;
+            margin-bottom: 8px;
           }
 
           .small-badge {
-            font-size: 10px;
-            padding: 5px 7px;
+            font-size: 9px;
+            padding: 4px 6px;
+            border-radius: 8px;
           }
 
           .sku-text {
-            font-size: 10px;
-            max-width: 70px;
+            font-size: 9px;
+            max-width: 60px;
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
           }
 
           .wishlist-btn {
-            width: 34px;
-            height: 34px;
-            font-size: 14px;
+            width: 30px;
+            height: 30px;
+            font-size: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 0;
           }
 
+          .price-text {
+            font-size: 17px;
+          }
+
+          .old-price {
+            font-size: 11px;
+          }
+
+          .action-btn {
+            font-size: 12px;
+            padding: 7px 10px;
+            border-radius: 10px;
+            font-weight: 600;
+          }
+
           @media (max-width: 575px) {
             .product-image-wrap {
-              height: 175px;
+              height: 145px;
             }
 
             .product-title {
-              font-size: 14px;
-              min-height: 38px;
+              font-size: 13px;
+              min-height: 34px;
             }
 
             .product-description {
-              font-size: 12px;
-              min-height: 32px;
+              font-size: 10px;
+              min-height: 24px;
             }
 
-            .small-badge {
-              font-size: 9px;
-              padding: 4px 6px;
+            .card-body {
+              padding: 10px !important;
+            }
+
+            .action-btn {
+              font-size: 11px;
+              padding: 6px 8px;
+            }
+
+            .price-text {
+              font-size: 15px;
             }
 
             .sku-text {
