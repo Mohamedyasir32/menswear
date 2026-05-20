@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -14,19 +14,20 @@ import Cart from "./pages/Cart";
 import Wishlist from "./pages/Wishlist";
 import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
-import Payments from "./pages/Payments";
+import Payments from "./pages/Payment";
 import Invoice from "./pages/Invoice";
 import Profile from "./pages/Profile";
 
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminDashboard from "./pages/admin/Dashboard";
 import AddProduct from "./pages/admin/AddProduct";
 import EditProduct from "./pages/admin/EditProduct";
-import AdminProducts from "./pages/admin/AdminProducts";
-import AdminOrders from "./pages/admin/AdminOrders";
-import AdminPayments from "./pages/admin/AdminPayments";
-import AdminUsers from "./pages/admin/AdminUsers";
+import AdminOrders from "./pages/admin/Orders";
+import AdminPayments from "./pages/admin/Payments";
+import AdminUsers from "./pages/admin/Users";
 import Analytics from "./pages/admin/Analytics";
 import Coupons from "./pages/admin/Coupons";
+import ManageProducts from "./pages/admin/ManageProducts";
+
 
 function App() {
   return (
@@ -34,15 +35,12 @@ function App() {
       <Navbar />
 
       <Routes>
-        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<Products />} />
         <Route path="/products/:id" element={<ProductDetails />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* User Protected Routes */}
-  
         <Route
           path="/cart"
           element={
@@ -106,7 +104,6 @@ function App() {
           }
         />
 
-        {/* Admin Protected Routes */}
         <Route
           path="/admin/dashboard"
           element={
@@ -120,7 +117,7 @@ function App() {
           path="/admin/products"
           element={
             <ProtectedRoute adminOnly={true}>
-              <AdminProducts />
+              <ManageProducts />
             </ProtectedRoute>
           }
         />
@@ -187,6 +184,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
       <ToastContainer position="top-right" autoClose={2000} />
