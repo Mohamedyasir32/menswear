@@ -11,6 +11,12 @@ function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reviewLoading, setReviewLoading] = useState(false);
+
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: "",
+  });
 
   const getProductImage = (item) =>
     item?.image_url ||
@@ -150,6 +156,47 @@ function ProductDetails() {
     }
   };
 
+  const submitReview = async (e) => {
+    e.preventDefault();
+
+    const token = localStorage.getItem("access");
+
+    if (!token) {
+      toast.error("Please login to submit review");
+      navigate("/login");
+      return;
+    }
+
+    if (!reviewForm.comment.trim()) {
+      toast.error("Please write your review");
+      return;
+    }
+
+    setReviewLoading(true);
+
+    try {
+      await API.post(`products/${id}/reviews/`, {
+        rating: Number(reviewForm.rating),
+        comment: reviewForm.comment.trim(),
+      });
+
+      toast.success("Review submitted successfully");
+
+      const response = await API.get(`products/${id}/reviews/`);
+      setReviews(Array.isArray(response.data) ? response.data : []);
+
+      setReviewForm({
+        rating: 5,
+        comment: "",
+      });
+    } catch (error) {
+      console.log(error.response?.data || error);
+      toast.error("You may have already reviewed this product");
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center">
@@ -190,9 +237,7 @@ function ProductDetails() {
                   </span>
 
                   {product.is_featured && (
-                    <span className="badge bg-warning text-dark">
-                      Featured
-                    </span>
+                    <span className="badge bg-warning text-dark">Featured</span>
                   )}
 
                   {stock > 5 ? (
@@ -237,9 +282,7 @@ function ProductDetails() {
                   )}
 
                   {product.size && (
-                    <span className="badge bg-primary">
-                      Size: {product.size}
-                    </span>
+                    <span className="badge bg-primary">Size: {product.size}</span>
                   )}
 
                   {product.color && (
@@ -304,22 +347,89 @@ function ProductDetails() {
           </div>
         </div>
 
-        <div className="card border-0 shadow-lg p-3 p-md-4">
-          <h3 className="fw-bold mb-3">Reviews & Ratings</h3>
+        <div className="card border-0 shadow-lg p-3 p-md-4 mb-5">
+          <div className="d-flex flex-column flex-md-row justify-content-between gap-3 mb-4">
+            <div>
+              <h3 className="fw-bold mb-1">Reviews & Ratings</h3>
+              <p className="text-muted mb-0">Share your experience</p>
+            </div>
+
+            <div className="text-md-end">
+              <h3 className="text-warning mb-0">⭐ {averageRating}</h3>
+              <small className="text-muted">{reviews.length} reviews</small>
+            </div>
+          </div>
+
+          <form onSubmit={submitReview} className="card bg-light border-0 p-3 mb-4">
+            <h5 className="fw-bold mb-3">Write a Review</h5>
+
+            <div className="row g-3">
+              <div className="col-md-3">
+                <select
+                  className="form-select"
+                  value={reviewForm.rating}
+                  onChange={(e) =>
+                    setReviewForm({
+                      ...reviewForm,
+                      rating: e.target.value,
+                    })
+                  }
+                >
+                  <option value="5">5 Star</option>
+                  <option value="4">4 Star</option>
+                  <option value="3">3 Star</option>
+                  <option value="2">2 Star</option>
+                  <option value="1">1 Star</option>
+                </select>
+              </div>
+
+              <div className="col-md-9">
+                <textarea
+                  className="form-control"
+                  rows="3"
+                  placeholder="Write your review..."
+                  value={reviewForm.comment}
+                  onChange={(e) =>
+                    setReviewForm({
+                      ...reviewForm,
+                      comment: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <button
+              className="btn btn-dark mt-3 align-self-start"
+              disabled={reviewLoading}
+            >
+              {reviewLoading ? "Submitting..." : "Submit Review"}
+            </button>
+          </form>
 
           {reviews.length === 0 ? (
-            <p className="text-muted mb-0">No reviews yet.</p>
+            <div className="text-center text-muted p-4">No reviews yet.</div>
           ) : (
-            reviews.map((item) => (
-              <div className="card border-0 shadow-sm p-3 mb-3" key={item.id}>
-                <div className="d-flex justify-content-between">
-                  <strong>{item.username || "Customer"}</strong>
-                  <span className="text-warning">⭐ {item.rating}</span>
-                </div>
+            <div className="row g-3">
+              {reviews.map((item) => (
+                <div className="col-md-6" key={item.id}>
+                  <div className="card border-0 shadow-sm p-3 h-100">
+                    <div className="d-flex justify-content-between gap-2 mb-2">
+                      <strong>{item.username || "Customer"}</strong>
+                      <span className="text-warning">⭐ {item.rating}</span>
+                    </div>
 
-                <p className="mt-2 mb-1">{item.comment}</p>
-              </div>
-            ))
+                    <p className="mb-1">{item.comment}</p>
+
+                    {item.created_at && (
+                      <small className="text-muted">
+                        {new Date(item.created_at).toLocaleString()}
+                      </small>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
