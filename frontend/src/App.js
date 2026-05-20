@@ -42,14 +42,6 @@ function App() {
         <Route path="/register" element={<Register />} />
 
         {/* User Protected Routes */}
-        <Route
-  path="/products/:id"
-  element={
-    <ProtectedRoute>
-      <ProductDetails />
-    </ProtectedRoute>
-  }
-/>
   
         <Route
           path="/cart"
