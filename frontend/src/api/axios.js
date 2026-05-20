@@ -1,11 +1,29 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://127.0.0.1:8000/api/",
+  baseURL:
+    process.env.REACT_APP_API_URL ||
+    "http://127.0.0.1:8000/api/",
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+const PUBLIC_PATHS = [
+  "/",
+  "/products",
+  "/login",
+  "/register",
+];
+
+const isPublicPage = () => {
+  const path = window.location.pathname;
+
+  return (
+    PUBLIC_PATHS.includes(path) ||
+    path.startsWith("/products/")
+  );
+};
 
 const logoutUser = () => {
   localStorage.removeItem("access");
@@ -13,10 +31,7 @@ const logoutUser = () => {
   localStorage.removeItem("is_staff");
   localStorage.removeItem("username");
 
-  if (
-    window.location.pathname !== "/login" &&
-    window.location.pathname !== "/register"
-  ) {
+  if (!isPublicPage()) {
     window.location.href = "/login";
   }
 };
@@ -36,8 +51,13 @@ API.interceptors.request.use(
 
 API.interceptors.response.use(
   (response) => response,
+
   async (error) => {
     const originalRequest = error.config;
+
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
 
     if (
       error.response?.status === 401 &&

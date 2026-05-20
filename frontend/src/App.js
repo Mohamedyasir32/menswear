@@ -50,6 +50,7 @@ function App() {
     </ProtectedRoute>
   }
 />
+  
         <Route
           path="/cart"
           element={
