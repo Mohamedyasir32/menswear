@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import {  useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../api/axios";
 
 function Products() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
@@ -19,11 +20,7 @@ function Products() {
     fetchProducts();
 
     const params = new URLSearchParams(location.search);
-    const searchParam = params.get("search");
-
-    if (searchParam) {
-      setSearch(searchParam);
-    }
+    setSearch(params.get("search") || "");
 
     if (localStorage.getItem("darkMode") === "true") {
       setDarkMode(true);
@@ -67,6 +64,15 @@ function Products() {
     } catch {
       return [];
     }
+  };
+
+  const viewProduct = (id) => {
+    if (!id) {
+      toast.error("Invalid product");
+      return;
+    }
+
+    navigate(`/products/${id}`);
   };
 
   const addToCart = (product) => {
@@ -227,6 +233,7 @@ function Products() {
               onClick={() => {
                 setSearch("");
                 setCategory("");
+                navigate("/products");
               }}
             >
               Clear Filters
@@ -255,7 +262,11 @@ function Products() {
                     }`}
                   >
                     <div className="position-relative product-image-wrap">
-                      <Link to={`/products/${product.id}`}>
+                      <button
+                        type="button"
+                        className="image-link-btn"
+                        onClick={() => viewProduct(product.id)}
+                      >
                         <img
                           src={getProductImage(product)}
                           alt={product.name || "Product"}
@@ -265,7 +276,7 @@ function Products() {
                               "https://via.placeholder.com/500x600?text=No+Image";
                           }}
                         />
-                      </Link>
+                      </button>
 
                       <div className="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1">
                         {product.is_featured && (
@@ -285,7 +296,6 @@ function Products() {
                         type="button"
                         className="btn btn-light position-absolute top-0 end-0 m-2 rounded-circle shadow-sm wishlist-btn"
                         onClick={() => addToWishlist(product)}
-                        title="Add to wishlist"
                       >
                         ❤
                       </button>
@@ -321,39 +331,15 @@ function Products() {
                         {(product.description || "").length > 38 ? "..." : ""}
                       </p>
 
-                      <div className="d-flex gap-1 flex-wrap mb-2">
-                        {product.size && (
-                          <span className="badge bg-primary small-badge">
-                            {product.size}
-                          </span>
-                        )}
-
-                        {product.color && (
-                          <span className="badge bg-secondary small-badge">
-                            {product.color}
-                          </span>
-                        )}
-
-                        {product.brand && (
-                          <span className="badge bg-info text-dark small-badge">
-                            {product.brand}
-                          </span>
-                        )}
-                      </div>
-
                       <div className="mb-2">
                         {stock > 5 ? (
-                          <span className="badge bg-success small-badge">
-                            In Stock
-                          </span>
+                          <span className="badge bg-success small-badge">In Stock</span>
                         ) : stock > 0 ? (
                           <span className="badge bg-warning text-dark small-badge">
                             Low: {stock}
                           </span>
                         ) : (
-                          <span className="badge bg-danger small-badge">
-                            Out
-                          </span>
+                          <span className="badge bg-danger small-badge">Out</span>
                         )}
                       </div>
 
@@ -367,7 +353,6 @@ function Products() {
                             <small className="text-decoration-line-through text-muted old-price">
                               ₹ {Number(product.price || 0).toLocaleString("en-IN")}
                             </small>
-
                             <small className="text-danger fw-semibold ms-1 old-price">
                               Save {discountPercent}%
                             </small>
@@ -376,14 +361,15 @@ function Products() {
                       </div>
 
                       <div className="mt-auto d-grid gap-1">
-                        <Link
-                          to={`/products/${product.id}`}
+                        <button
+                          type="button"
                           className={`btn action-btn ${
                             darkMode ? "btn-light" : "btn-outline-dark"
                           }`}
+                          onClick={() => viewProduct(product.id)}
                         >
                           View
-                        </Link>
+                        </button>
 
                         <button
                           type="button"
@@ -430,12 +416,18 @@ function Products() {
 
       <style>
         {`
+          .image-link-btn {
+            border: 0;
+            padding: 0;
+            width: 100%;
+            background: transparent;
+            display: block;
+          }
+
           .product-card {
             border-radius: 16px;
             overflow: hidden;
             transition: all 0.3s ease;
-            border: 1px solid rgba(0,0,0,0.05) !important;
-            background: #fff;
           }
 
           .product-card:hover {
