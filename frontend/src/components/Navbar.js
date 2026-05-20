@@ -155,7 +155,7 @@ function Navbar() {
 
                 <li className="nav-item">
                   <NavLink className={navClass} to="/admin/products" onClick={closeMenu}>
-                    Products
+                    AddProducts
                   </NavLink>
                 </li>
 

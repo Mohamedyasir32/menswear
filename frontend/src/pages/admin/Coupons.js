@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import API from "../../api/axios";
 
@@ -6,6 +6,9 @@ function Coupons() {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const [form, setForm] = useState({
     code: "",
@@ -15,7 +18,7 @@ function Coupons() {
 
   const [editId, setEditId] = useState(null);
 
-  const fetchCoupons = async () => {
+  const fetchCoupons = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -27,18 +30,35 @@ function Coupons() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCoupons();
-  }, []);
+  }, [fetchCoupons]);
+
+  const filteredCoupons = useMemo(() => {
+    return coupons.filter((coupon) => {
+      const code = coupon.code || "";
+      const matchesSearch = code.toLowerCase().includes(search.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && coupon.active) ||
+        (statusFilter === "inactive" && !coupon.active);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [coupons, search, statusFilter]);
+
+  const activeCoupons = coupons.filter((coupon) => coupon.active).length;
+  const inactiveCoupons = coupons.filter((coupon) => !coupon.active).length;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
     setForm((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === "checkbox" ? checked : value.toUpperCase(),
     }));
   };
 
@@ -48,16 +68,44 @@ function Coupons() {
       discount_percent: "",
       active: true,
     });
+
     setEditId(null);
   };
 
+  const getErrorMessage = (error) => {
+    const data = error.response?.data;
+
+    if (!data) return "Something went wrong. Please try again.";
+
+    if (typeof data === "string") return data;
+
+    if (Array.isArray(data)) return data[0];
+
+    if (typeof data === "object") {
+      const firstKey = Object.keys(data)[0];
+      const value = data[firstKey];
+
+      return Array.isArray(value)
+        ? `${firstKey}: ${value[0]}`
+        : `${firstKey}: ${value}`;
+    }
+
+    return "Something went wrong. Please try again.";
+  };
+
   const validateForm = () => {
-    if (!form.code.trim()) {
+    const code = form.code.trim().toUpperCase();
+    const discount = Number(form.discount_percent);
+
+    if (!code) {
       toast.error("Coupon code is required");
       return false;
     }
 
-    const discount = Number(form.discount_percent);
+    if (code.length < 3) {
+      toast.error("Coupon code must be at least 3 characters");
+      return false;
+    }
 
     if (!discount || discount < 1 || discount > 100) {
       toast.error("Discount must be between 1 and 100");
@@ -70,7 +118,7 @@ function Coupons() {
   const saveCoupon = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    if (!validateForm() || saving) return;
 
     setSaving(true);
 
@@ -93,7 +141,7 @@ function Coupons() {
       fetchCoupons();
     } catch (error) {
       console.log(error.response?.data || error);
-      toast.error("Failed to save coupon");
+      toast.error(getErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -101,11 +149,14 @@ function Coupons() {
 
   const editCoupon = (coupon) => {
     setEditId(coupon.id);
+
     setForm({
       code: coupon.code || "",
       discount_percent: coupon.discount_percent || "",
       active: Boolean(coupon.active),
     });
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const toggleCoupon = async (coupon) => {
@@ -118,7 +169,7 @@ function Coupons() {
       fetchCoupons();
     } catch (error) {
       console.log(error.response?.data || error);
-      toast.error("Failed to update coupon");
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -131,7 +182,7 @@ function Coupons() {
       fetchCoupons();
     } catch (error) {
       console.log(error.response?.data || error);
-      toast.error("Delete failed");
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -152,10 +203,44 @@ function Coupons() {
             className="p-4 p-md-5 text-white"
             style={{ background: "linear-gradient(135deg, #000000, #343a40)" }}
           >
-            <h1 className="fw-bold">Coupon Management</h1>
-            <p className="mb-0 opacity-75">
-              Create, edit, activate, deactivate and delete coupons
-            </p>
+            <div className="d-flex flex-column flex-md-row justify-content-between gap-3">
+              <div>
+                <h1 className="fw-bold">Coupon Management</h1>
+                <p className="mb-0 opacity-75">
+                  Create, edit, activate, deactivate and delete coupons
+                </p>
+              </div>
+
+              <button
+                className="btn btn-warning fw-bold align-self-start"
+                onClick={fetchCoupons}
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="row g-3 mb-4">
+          <div className="col-md-4">
+            <div className="card border-0 shadow-sm text-center p-3">
+              <h3 className="fw-bold mb-0">{coupons.length}</h3>
+              <small className="text-muted">Total Coupons</small>
+            </div>
+          </div>
+
+          <div className="col-md-4">
+            <div className="card border-0 shadow-sm text-center p-3">
+              <h3 className="fw-bold text-success mb-0">{activeCoupons}</h3>
+              <small className="text-muted">Active</small>
+            </div>
+          </div>
+
+          <div className="col-md-4">
+            <div className="card border-0 shadow-sm text-center p-3">
+              <h3 className="fw-bold text-secondary mb-0">{inactiveCoupons}</h3>
+              <small className="text-muted">Inactive</small>
+            </div>
           </div>
         </div>
 
@@ -230,6 +315,32 @@ function Coupons() {
           </div>
 
           <div className="col-lg-8">
+            <div className="card border-0 shadow-sm p-3 mb-3">
+              <div className="row g-2">
+                <div className="col-md-8">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search coupon code..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+
+                <div className="col-md-4">
+                  <select
+                    className="form-select"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="active">Active Only</option>
+                    <option value="inactive">Inactive Only</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
             <div className="card border-0 shadow-lg d-none d-md-block">
               <div className="card-body p-4">
                 <div className="table-responsive">
@@ -244,14 +355,14 @@ function Coupons() {
                     </thead>
 
                     <tbody>
-                      {coupons.length === 0 ? (
+                      {filteredCoupons.length === 0 ? (
                         <tr>
                           <td colSpan="4" className="text-center py-5">
                             No coupons found
                           </td>
                         </tr>
                       ) : (
-                        coupons.map((coupon) => (
+                        filteredCoupons.map((coupon) => (
                           <tr key={coupon.id}>
                             <td className="fw-bold">{coupon.code}</td>
                             <td>{coupon.discount_percent}%</td>
@@ -265,7 +376,7 @@ function Coupons() {
                               </span>
                             </td>
                             <td>
-                              <div className="d-flex gap-2">
+                              <div className="d-flex gap-2 flex-wrap">
                                 <button
                                   className="btn btn-warning btn-sm"
                                   onClick={() => editCoupon(coupon)}
@@ -302,17 +413,17 @@ function Coupons() {
             </div>
 
             <div className="d-md-none">
-              {coupons.length === 0 ? (
+              {filteredCoupons.length === 0 ? (
                 <div className="card border-0 shadow-lg">
                   <div className="card-body text-center py-5">
                     No coupons found
                   </div>
                 </div>
               ) : (
-                coupons.map((coupon) => (
+                filteredCoupons.map((coupon) => (
                   <div className="card border-0 shadow-lg mb-3" key={coupon.id}>
                     <div className="card-body">
-                      <div className="d-flex justify-content-between align-items-start mb-3">
+                      <div className="d-flex justify-content-between align-items-start mb-3 gap-2">
                         <div>
                           <h5 className="fw-bold mb-1">{coupon.code}</h5>
                           <p className="text-muted mb-0">
@@ -339,9 +450,7 @@ function Coupons() {
 
                         <button
                           className={`btn ${
-                            coupon.active
-                              ? "btn-outline-secondary"
-                              : "btn-success"
+                            coupon.active ? "btn-outline-secondary" : "btn-success"
                           }`}
                           onClick={() => toggleCoupon(coupon)}
                         >
