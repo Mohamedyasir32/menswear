@@ -13,7 +13,7 @@ import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
 import Wishlist from "./pages/Wishlist";
 import Checkout from "./pages/Checkout";
-import Orders from "./pages/MyOrders";
+import MyOrders from "./pages/MyOrders";
 import Payments from "./pages/Payments";
 import Invoice from "./pages/Invoice";
 import Profile from "./pages/Profile";
@@ -70,13 +70,13 @@ function App() {
         />
 
         <Route
-          path="/myorders"
-          element={
-            <ProtectedRoute>
-              <Orders />
-            </ProtectedRoute>
-          }
-        />
+  path="/orders"
+  element={
+    <ProtectedRoute>
+      <MyOrders />
+    </ProtectedRoute>
+  }
+/>
 
         <Route
           path="/payments"
