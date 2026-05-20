@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../api/axios";
 
 function Products() {
+  const location = useLocation();
+
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
@@ -16,10 +18,17 @@ function Products() {
   useEffect(() => {
     fetchProducts();
 
+    const params = new URLSearchParams(location.search);
+    const searchParam = params.get("search");
+
+    if (searchParam) {
+      setSearch(searchParam);
+    }
+
     if (localStorage.getItem("darkMode") === "true") {
       setDarkMode(true);
     }
-  }, []);
+  }, [location.search]);
 
   useEffect(() => {
     localStorage.setItem("darkMode", String(darkMode));
@@ -180,7 +189,7 @@ function Products() {
           </button>
         </div>
 
-        <div className="row g-3 mb-4 mb-md-5">
+        <div className="row g-3 mb-4">
           <div className="col-12 col-md-8">
             <input
               type="text"
@@ -212,6 +221,7 @@ function Products() {
           <div className="card border-0 shadow text-center py-5">
             <h3>No products found</h3>
             <p className="text-muted mb-3">Try another search or category</p>
+
             <button
               className="btn btn-dark mx-auto"
               onClick={() => {
@@ -272,6 +282,7 @@ function Products() {
                       </div>
 
                       <button
+                        type="button"
                         className="btn btn-light position-absolute top-0 end-0 m-2 rounded-circle shadow-sm wishlist-btn"
                         onClick={() => addToWishlist(product)}
                         title="Add to wishlist"
@@ -375,6 +386,7 @@ function Products() {
                         </Link>
 
                         <button
+                          type="button"
                           className="btn btn-dark action-btn"
                           onClick={() => addToCart(product)}
                           disabled={stock <= 0}
@@ -402,6 +414,7 @@ function Products() {
                     }`}
                   >
                     <button
+                      type="button"
                       className="page-link"
                       onClick={() => setCurrentPage(index + 1)}
                     >
@@ -452,14 +465,12 @@ function Products() {
             font-size: 14px;
             line-height: 1.3;
             min-height: 36px;
-            margin-bottom: 4px;
           }
 
           .product-description {
             font-size: 11px;
             line-height: 1.3;
             min-height: 28px;
-            margin-bottom: 8px;
           }
 
           .small-badge {
