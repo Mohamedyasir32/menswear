@@ -1,272 +1,422 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  Link,
+  NavLink,
+  useNavigate,
+} from "react-router-dom";
 
 function Navbar() {
-  const navigate = useNavigate();
 
-  const [search, setSearch] = useState("");
-  const [cartCount, setCartCount] = useState(0);
-  const [wishlistCount, setWishlistCount] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const navigate =
+    useNavigate();
 
-  const token = localStorage.getItem("access");
-  const username = localStorage.getItem("username") || "User";
-  const isStaff = localStorage.getItem("is_staff") === "true";
+  const [cartCount,
+    setCartCount] =
+    useState(0);
+
+  const [wishlistCount,
+    setWishlistCount] =
+    useState(0);
+
+  const [menuOpen,
+    setMenuOpen] =
+    useState(false);
+
+  const token =
+    localStorage.getItem(
+      "access"
+    );
+
+  const username =
+    localStorage.getItem(
+      "username"
+    ) || "User";
+
+  const isStaff =
+    localStorage.getItem(
+      "is_staff"
+    ) === "true";
 
   const safeParse = (key) => {
+
     try {
-      const data = JSON.parse(localStorage.getItem(key));
-      return Array.isArray(data) ? data : [];
+
+      const data =
+        JSON.parse(
+          localStorage.getItem(key)
+        );
+
+      return Array.isArray(data)
+        ? data
+        : [];
+
     } catch {
+
       return [];
     }
   };
 
-  const updateCounts = useCallback(() => {
-    const cart = safeParse("cart");
-    const wishlist = safeParse("wishlist");
+  const updateCounts =
+    useCallback(() => {
 
-    setCartCount(
-      cart.reduce((total, item) => total + Number(item.quantity || 1), 0)
-    );
+      const cart =
+        safeParse("cart");
 
-    setWishlistCount(wishlist.length);
-  }, []);
+      const wishlist =
+        safeParse("wishlist");
+
+      setCartCount(
+        cart.reduce(
+          (
+            total,
+            item
+          ) =>
+            total +
+            Number(
+              item.quantity || 1
+            ),
+          0
+        )
+      );
+
+      setWishlistCount(
+        wishlist.length
+      );
+
+    }, []);
 
   useEffect(() => {
+
     updateCounts();
 
-    window.addEventListener("storage", updateCounts);
-    window.addEventListener("cartUpdated", updateCounts);
-    window.addEventListener("wishlistUpdated", updateCounts);
+    window.addEventListener(
+      "storage",
+      updateCounts
+    );
+
+    window.addEventListener(
+      "cartUpdated",
+      updateCounts
+    );
+
+    window.addEventListener(
+      "wishlistUpdated",
+      updateCounts
+    );
 
     return () => {
-      window.removeEventListener("storage", updateCounts);
-      window.removeEventListener("cartUpdated", updateCounts);
-      window.removeEventListener("wishlistUpdated", updateCounts);
+
+      window.removeEventListener(
+        "storage",
+        updateCounts
+      );
+
+      window.removeEventListener(
+        "cartUpdated",
+        updateCounts
+      );
+
+      window.removeEventListener(
+        "wishlistUpdated",
+        updateCounts
+      );
     };
+
   }, [updateCounts]);
 
-  const closeMenu = () => setMenuOpen(false);
+  const closeMenu = () =>
+    setMenuOpen(false);
 
   const logout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    localStorage.removeItem("is_staff");
-    localStorage.removeItem("username");
+
+    localStorage.removeItem(
+      "access"
+    );
+
+    localStorage.removeItem(
+      "refresh"
+    );
+
+    localStorage.removeItem(
+      "is_staff"
+    );
+
+    localStorage.removeItem(
+      "username"
+    );
 
     closeMenu();
+
     navigate("/login");
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
+  const navClass =
+    ({ isActive }) =>
 
-    const keyword = search.trim();
-
-    if (keyword) {
-      navigate(`/products?search=${encodeURIComponent(keyword)}`);
-    } else {
-      navigate("/products");
-    }
-
-    closeMenu();
-  };
-
-  const navClass = ({ isActive }) =>
-    isActive ? "nav-link fw-bold text-warning" : "nav-link text-light";
+      isActive
+        ? "nav-link active-link"
+        : "nav-link normal-link";
 
   return (
+
     <nav
-      className="navbar navbar-expand-lg navbar-dark sticky-top shadow-lg"
-      style={{
-        background: "rgba(0,0,0,0.94)",
-        backdropFilter: "blur(10px)",
-      }}
+      className="navbar navbar-expand-lg navbar-dark sticky-top navbar-custom"
     >
+
       <div className="container">
-        <Link className="navbar-brand fw-bold fs-3" to="/" onClick={closeMenu}>
-          Mens<span className="text-warning">Wear</span>
+
+        {/* Logo */}
+
+        <Link
+          className="navbar-brand fw-bold logo-text"
+          to="/"
+          onClick={closeMenu}
+        >
+          Mens
+          <span className="text-warning">
+            Wear
+          </span>
         </Link>
 
+        {/* Mobile Toggle */}
+
         <button
-          className="navbar-toggler border-0"
+          className="navbar-toggler border-0 shadow-none"
           type="button"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle navigation"
+          onClick={() =>
+            setMenuOpen(
+              !menuOpen
+            )
+          }
         >
           <span className="navbar-toggler-icon"></span>
         </button>
 
-        <div className={`collapse navbar-collapse ${menuOpen ? "show" : ""}`}>
-          <form
-            className="d-flex mx-lg-4 my-3 my-lg-0 w-100"
-            onSubmit={handleSearch}
-            style={{ maxWidth: "380px" }}
-          >
-            <div className="input-group">
-              <input
-                type="text"
-                className="form-control border-0 shadow-none"
-                placeholder="Search products..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{ borderRadius: "50px 0 0 50px" }}
-              />
+        {/* Navbar Content */}
 
-              <button
-                className="btn btn-warning px-3 px-md-4 fw-bold"
-                type="submit"
-                style={{ borderRadius: "0 50px 50px 0" }}
-              >
-                🔍
-              </button>
-            </div>
-          </form>
+        <div
+          className={`collapse navbar-collapse ${
+            menuOpen
+              ? "show"
+              : ""
+          }`}
+        >
 
-          <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-2 text-center text-lg-start">
+          <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-2 text-center">
+
             <li className="nav-item">
-              <NavLink className={navClass} to="/" onClick={closeMenu}>
+              <NavLink
+                className={navClass}
+                to="/"
+                onClick={closeMenu}
+              >
                 Home
               </NavLink>
             </li>
 
             <li className="nav-item">
-              <NavLink className={navClass} to="/products" onClick={closeMenu}>
+              <NavLink
+                className={navClass}
+                to="/products"
+                onClick={closeMenu}
+              >
                 Products
               </NavLink>
             </li>
 
             {!token && (
+
               <li className="nav-item">
-                <NavLink className={navClass} to="/login" onClick={closeMenu}>
+
+                <NavLink
+                  className={navClass}
+                  to="/login"
+                  onClick={closeMenu}
+                >
                   Login
                 </NavLink>
+
               </li>
             )}
 
-            {token && isStaff && (
-              <>
-                <li className="nav-item">
-                  <NavLink className={navClass} to="/admin/dashboard" onClick={closeMenu}>
-                    Dashboard
-                  </NavLink>
-                </li>
-
-                <li className="nav-item">
-                  <NavLink className={navClass} to="/admin/products" onClick={closeMenu}>
-                    AddProducts
-                  </NavLink>
-                </li>
-
-                <li className="nav-item">
-                  <NavLink className={navClass} to="/admin/orders" onClick={closeMenu}>
-                    Orders
-                  </NavLink>
-                </li>
-
-                <li className="nav-item">
-                  <NavLink className={navClass} to="/admin/payments" onClick={closeMenu}>
-                    Payments
-                  </NavLink>
-                </li>
-                <li className="nav-item">
-                 <NavLink className={navClass} to="/admin/coupons" onClick={closeMenu}>
-                   Coupons
-                 </NavLink>
-                </li>
-
-                <li className="nav-item">
-                  <NavLink className={navClass} to="/admin/users" onClick={closeMenu}>
-                    Users
-                  </NavLink>
-                </li>
-              </>
-            )}
+            {/* USER NAV */}
 
             {token && !isStaff && (
               <>
+
                 <li className="nav-item">
-                  <NavLink className={navClass} to="/cart" onClick={closeMenu}>
+
+                  <NavLink
+                    className={navClass}
+                    to="/cart"
+                    onClick={closeMenu}
+                  >
+
                     Cart
+
                     {cartCount > 0 && (
+
                       <span className="badge rounded-pill bg-danger ms-1">
+
                         {cartCount}
+
                       </span>
                     )}
                   </NavLink>
                 </li>
 
                 <li className="nav-item">
-                  <NavLink className={navClass} to="/wishlist" onClick={closeMenu}>
+
+                  <NavLink
+                    className={navClass}
+                    to="/wishlist"
+                    onClick={closeMenu}
+                  >
+
                     Wishlist
+
                     {wishlistCount > 0 && (
+
                       <span className="badge rounded-pill bg-warning text-dark ms-1">
+
                         {wishlistCount}
+
                       </span>
                     )}
                   </NavLink>
                 </li>
 
                 <li className="nav-item">
-                  <NavLink className={navClass} to="/orders" onClick={closeMenu}>
+
+                  <NavLink
+                    className={navClass}
+                    to="/orders"
+                    onClick={closeMenu}
+                  >
                     Orders
                   </NavLink>
-                </li>
 
-                <li className="nav-item">
-                  <NavLink className={navClass} to="/payments" onClick={closeMenu}>
-                    Payments
-                  </NavLink>
-                </li>
-
-                <li className="nav-item">
-                  <NavLink className={navClass} to="/profile" onClick={closeMenu}>
-                    Profile
-                  </NavLink>
                 </li>
               </>
             )}
 
+            {/* ADMIN NAV */}
+
+            {token && isStaff && (
+              <>
+
+                <li className="nav-item">
+
+                  <NavLink
+                    className={navClass}
+                    to="/admin/dashboard"
+                    onClick={closeMenu}
+                  >
+                    Dashboard
+                  </NavLink>
+
+                </li>
+
+                <li className="nav-item">
+
+                  <NavLink
+                    className={navClass}
+                    to="/admin/products"
+                    onClick={closeMenu}
+                  >
+                    Products
+                  </NavLink>
+
+                </li>
+
+                <li className="nav-item">
+
+                  <NavLink
+                    className={navClass}
+                    to="/admin/orders"
+                    onClick={closeMenu}
+                  >
+                    Orders
+                  </NavLink>
+
+                </li>
+
+                <li className="nav-item">
+
+                  <NavLink
+                    className={navClass}
+                    to="/admin/coupons"
+                    onClick={closeMenu}
+                  >
+                    Coupons
+                  </NavLink>
+
+                </li>
+
+              </>
+            )}
+
+            {/* USER DROPDOWN */}
+
             {token && (
+
               <li className="nav-item dropdown mt-2 mt-lg-0">
+
                 <button
-                  className="btn btn-outline-light rounded-pill dropdown-toggle px-3 w-100"
+                  className="btn profile-btn dropdown-toggle"
                   type="button"
                   data-bs-toggle="dropdown"
                 >
+
                   <span
-                    className="rounded-circle bg-warning text-dark me-2 d-inline-flex align-items-center justify-content-center"
-                    style={{
-                      width: "30px",
-                      height: "30px",
-                      fontWeight: "bold",
-                    }}
+                    className="profile-avatar"
                   >
-                    {username.charAt(0).toUpperCase()}
+
+                    {username
+                      .charAt(0)
+                      .toUpperCase()}
+
                   </span>
-                  {username}
+
+                  <span className="username-text">
+
+                    {username}
+
+                  </span>
+
                 </button>
 
                 <ul className="dropdown-menu dropdown-menu-end border-0 shadow-lg">
+
                   {!isStaff && (
                     <>
                       <li>
-                        <Link className="dropdown-item" to="/profile" onClick={closeMenu}>
+
+                        <Link
+                          className="dropdown-item"
+                          to="/profile"
+                          onClick={closeMenu}
+                        >
                           My Profile
                         </Link>
+
                       </li>
 
                       <li>
-                        <Link className="dropdown-item" to="/orders" onClick={closeMenu}>
-                          My Orders
-                        </Link>
-                      </li>
 
-                      <li>
-                        <Link className="dropdown-item" to="/wishlist" onClick={closeMenu}>
-                          Wishlist
+                        <Link
+                          className="dropdown-item"
+                          to="/payments"
+                          onClick={closeMenu}
+                        >
+                          Payments
                         </Link>
+
                       </li>
                     </>
                   )}
@@ -274,35 +424,28 @@ function Navbar() {
                   {isStaff && (
                     <>
                       <li>
+
                         <Link
                           className="dropdown-item"
-                          to="/admin/dashboard"
+                          to="/admin/analytics"
                           onClick={closeMenu}
                         >
-                          Admin Dashboard
+                          Analytics
                         </Link>
+
                       </li>
 
                       <li>
-                        <Link
-                          className="dropdown-item"
-                          to="/admin/add-product"
-                          onClick={closeMenu}
-                        >
-                          Add Product
-                        </Link>
-                      </li>
 
-                      <li>
                         <Link
                           className="dropdown-item"
-                          to="/admin/orders"
+                          to="/admin/payments"
                           onClick={closeMenu}
                         >
-                          Manage Orders
+                          Payments
                         </Link>
+
                       </li>
-       
                     </>
                   )}
 
@@ -311,6 +454,7 @@ function Navbar() {
                   </li>
 
                   <li>
+
                     <button
                       type="button"
                       className="dropdown-item text-danger fw-bold"
@@ -318,6 +462,7 @@ function Navbar() {
                     >
                       Logout
                     </button>
+
                   </li>
                 </ul>
               </li>
@@ -325,6 +470,105 @@ function Navbar() {
           </ul>
         </div>
       </div>
+
+      {/* CSS */}
+
+      <style>
+        {`
+
+          .navbar-custom {
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(12px);
+            padding: 12px 0;
+          }
+
+          .logo-text {
+            font-size: 28px;
+            letter-spacing: 1px;
+          }
+
+          .normal-link {
+            color: rgba(255,255,255,0.85) !important;
+            font-weight: 500;
+            transition: 0.3s;
+          }
+
+          .normal-link:hover {
+            color: #ffc107 !important;
+          }
+
+          .active-link {
+            color: #ffc107 !important;
+            font-weight: 700;
+          }
+
+          .profile-btn {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 7px 14px;
+          }
+
+          .profile-btn:hover {
+            background: rgba(255,255,255,0.14);
+            color: white;
+          }
+
+          .profile-avatar {
+            width: 32px;
+            height: 32px;
+            background: #ffc107;
+            color: black;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 8px;
+          }
+
+          .username-text {
+            font-size: 14px;
+            font-weight: 600;
+          }
+
+          .dropdown-menu {
+            border-radius: 14px;
+            overflow: hidden;
+          }
+
+          .dropdown-item {
+            padding: 10px 16px;
+            font-weight: 500;
+          }
+
+          .dropdown-item:hover {
+            background: #f5f5f5;
+          }
+
+          @media (max-width: 991px) {
+
+            .navbar-collapse {
+              margin-top: 18px;
+              background: rgba(0,0,0,0.98);
+              padding: 18px;
+              border-radius: 18px;
+            }
+
+            .nav-link {
+              padding: 12px 0 !important;
+            }
+
+            .profile-btn {
+              width: 100%;
+              justify-content: center;
+              margin-top: 12px;
+            }
+          }
+
+        `}
+      </style>
     </nav>
   );
 }
